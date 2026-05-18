@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: drvinschl-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: drvinschl
+      POSTGRES_PASSWORD: drvinschl
+      POSTGRES_DB: drvinschl
+    volumes:
+      - db_data:/var/lib/postgresql/data:Z
+      - ./db/init:/docker-entrypoint-initdb.d:Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drvinschl -d drvinschl"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: drvinschl-app
+
+    volumes:
+      - .:/app:Z
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: true
+
+    stdin_open: true
+    tty: true
+
+    restart: unless-stopped
+
+volumes:
+  db_data:
+
