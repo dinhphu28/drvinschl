@@ -1,0 +1,8 @@
+package com.dinhphu28.drvinschl.model;
+
+public record RegisterRequest(
+        String firstName,
+        String lastName,
+        String email,
+        String password) {
+}
