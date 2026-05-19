@@ -10,6 +10,5 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class AuditUser {
-    private String userId;
     private String username;
 }

@@ -30,7 +30,6 @@ public class AuditorAwareImpl implements AuditorAware<AuditUser> {
 
         if (principal instanceof UserDetails userDetails) {
             return Optional.of(new AuditUser(
-                    null,
                     userDetails.getUsername()));
         }
 

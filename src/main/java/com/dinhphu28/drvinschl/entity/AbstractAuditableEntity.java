@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.time.LocalDate;
 
 import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.EntityListeners;
@@ -31,12 +32,12 @@ public abstract class AbstractAuditableEntity<ID> extends AbstractPersistableEnt
     LocalDate lastModifiedDate;
 
     @CreatedBy
-    @AttributeOverride(name = "audit_user", column = @Column(name = "created_by"))
+    @AttributeOverride(name = "username", column = @Column(name = "created_by"))
     @Embedded
     private AuditUser createdBy;
 
     @LastModifiedBy
-    @AttributeOverride(name = "audit_user", column = @Column(name = "last_modified_by"))
+    @AttributeOverride(name = "username", column = @Column(name = "last_modified_by"))
     @Embedded
     private AuditUser lastModifiedBy;
 }
