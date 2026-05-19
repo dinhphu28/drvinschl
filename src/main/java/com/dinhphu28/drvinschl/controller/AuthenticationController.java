@@ -10,11 +10,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.model.AuthenticationRequest;
 import com.dinhphu28.drvinschl.model.AuthenticationResponse;
 import com.dinhphu28.drvinschl.model.AuthenticationResult;
+import com.dinhphu28.drvinschl.model.GoogleLoginRequest;
 import com.dinhphu28.drvinschl.model.RegisterRequest;
 import com.dinhphu28.drvinschl.service.AuthenticationService;
+import com.dinhphu28.drvinschl.service.GoogleAuthService;
+import com.dinhphu28.drvinschl.service.JwtService;
+import com.dinhphu28.drvinschl.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +28,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthenticationController {
     private final AuthenticationService authenticationService;
+    private final GoogleAuthService googleAuthService;
+    private final UserService userService;
+
+    private final JwtService jwtService;
 
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public void register(@RequestBody RegisterRequest request) {
@@ -56,5 +65,20 @@ public class AuthenticationController {
             throw new IllegalArgumentException("Refresh token is missing");
         }
         return authenticationService.refreshToken(refreshToken);
+    }
+
+    @PostMapping(value = "/google", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AuthenticationResponse> authenticateWithGoogle(@RequestBody GoogleLoginRequest request) {
+        var payload = googleAuthService.verify(request.idToken());
+
+        User user = userService.processGoogleUser(payload);
+
+        String accessToken = jwtService.generateToken(user);
+
+        AuthenticationResponse response = new AuthenticationResponse(
+                accessToken,
+                0L);
+
+        return ResponseEntity.ok().body(response);
     }
 }
