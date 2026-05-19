@@ -91,7 +91,7 @@ public class AuthenticationService {
         var token = Token.builder()
                 .user(user)
                 .token(refreshToken)
-                .tokenType(TokenType.BEARER)
+                .tokenType(TokenType.REFRESH)
                 .expired(false)
                 .revoked(false)
                 .build();
