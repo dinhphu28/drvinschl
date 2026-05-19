@@ -42,8 +42,6 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/swagger-ui.html")
                         .permitAll()
-                        // .requestMatchers("/api/v1/students/**").hasRole("USER")
-                        // .anyRequest().denyAll())
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)

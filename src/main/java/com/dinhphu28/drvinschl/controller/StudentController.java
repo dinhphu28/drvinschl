@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dinhphu28.drvinschl.model.UpdateStudentProfileRequest;
 import com.dinhphu28.drvinschl.service.StudentService;
 
-import jakarta.annotation.security.RolesAllowed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,15 +22,14 @@ import lombok.extern.slf4j.Slf4j;
 public class StudentController {
     private final StudentService studentService;
 
-    // @PreAuthorize("hasAuthority('USER')")
-    @RolesAllowed("USER")
+    @PreAuthorize("hasRole('USER')")
     @PutMapping(value = "/profile", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public void updateProfile(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody UpdateStudentProfileRequest request) {
 
         String username = userDetails.getUsername();
-        log.info("Username is {}", username);
+        log.info("CTL -------> USERNAME is {}", username);
         studentService.upsertProfile(username, request);
     }
 }

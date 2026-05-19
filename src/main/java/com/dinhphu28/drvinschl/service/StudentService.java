@@ -21,8 +21,6 @@ public class StudentService {
     public void upsertProfile(String username, UpdateStudentProfileRequest request) {
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        log.info("INPUT USERNAME IS: {}", username);
-        // System.out.printf("SOP -> INPUT USERNAME IS: {}", username);
 
         Student student = studentRepository.findByUser(user)
                 .orElseGet(() -> {
