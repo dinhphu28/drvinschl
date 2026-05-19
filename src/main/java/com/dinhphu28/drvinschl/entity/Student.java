@@ -1,7 +1,6 @@
 package com.dinhphu28.drvinschl.entity;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,9 +14,9 @@ import lombok.Setter;
 @Table(name = "tbl_student")
 @Getter
 @Setter
-public class Student extends AbstractAuditableEntity<UUID> {
+public class Student extends AbstractAuditableEntity {
 
-    @OneToOne
+    @OneToOne(optional = false)
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
