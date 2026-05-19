@@ -1,6 +1,6 @@
 package com.dinhphu28.drvinschl.entity;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -23,10 +23,10 @@ import lombok.Setter;
 public abstract class AbstractAuditableEntity extends AbstractPersistableEntity {
 
     @CreatedDate
-    LocalDate createdDate;
+    LocalDateTime createdDate;
 
     @LastModifiedDate
-    LocalDate lastModifiedDate;
+    LocalDateTime lastModifiedDate;
 
     @CreatedBy
     @AttributeOverride(name = "username", column = @Column(name = "created_by"))
