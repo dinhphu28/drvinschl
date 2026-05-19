@@ -33,3 +33,6 @@ application:
       expiration: 86400000
       refresh-token:
         expiration: 604800000
+  google:
+    oauth:
+      client-id: ${GOOGLE_OAUTH_CLIENT_ID}
