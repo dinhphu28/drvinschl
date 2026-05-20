@@ -10,16 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.model.AuthenticationRequest;
 import com.dinhphu28.drvinschl.model.AuthenticationResponse;
 import com.dinhphu28.drvinschl.model.AuthenticationResult;
 import com.dinhphu28.drvinschl.model.GoogleLoginRequest;
 import com.dinhphu28.drvinschl.model.RegisterRequest;
 import com.dinhphu28.drvinschl.service.AuthenticationService;
-import com.dinhphu28.drvinschl.service.GoogleAuthService;
-import com.dinhphu28.drvinschl.service.JwtService;
-import com.dinhphu28.drvinschl.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,10 +24,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthenticationController {
     private final AuthenticationService authenticationService;
-    private final GoogleAuthService googleAuthService;
-    private final UserService userService;
-
-    private final JwtService jwtService;
 
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public void register(@RequestBody RegisterRequest request) {
@@ -40,22 +32,10 @@ public class AuthenticationController {
 
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
+
         AuthenticationResult authResult = authenticationService.authenticate(request);
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", authResult.refreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .path("/api/v1/auth/refresh")
-                .maxAge(authResult.refreshTokenExpiration() / 1000)
-                .sameSite("Strict")
-                .build();
 
-        AuthenticationResponse response = new AuthenticationResponse(
-                authResult.accessToken(),
-                authResult.accessTokenExpiration());
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(response);
+        return buildAuthenticationResponse(authResult);
     }
 
     @PostMapping(value = "/refresh", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -69,16 +49,34 @@ public class AuthenticationController {
 
     @PostMapping(value = "/google", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AuthenticationResponse> authenticateWithGoogle(@RequestBody GoogleLoginRequest request) {
-        var payload = googleAuthService.verify(request.idToken());
 
-        User user = userService.processGoogleUser(payload);
+        AuthenticationResult authResult = authenticationService.authenticateWithGoogle(request);
 
-        String accessToken = jwtService.generateToken(user);
+        return buildAuthenticationResponse(authResult);
+    }
+
+    private static ResponseEntity<AuthenticationResponse> buildAuthenticationResponse(AuthenticationResult authResult) {
+        ResponseCookie cookie = buildCookie(
+                authResult.refreshToken(),
+                authResult.refreshTokenExpiration());
 
         AuthenticationResponse response = new AuthenticationResponse(
-                accessToken,
-                0L);
+                authResult.accessToken(),
+                authResult.accessTokenExpiration());
 
-        return ResponseEntity.ok().body(response);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(response);
+    }
+
+    private static ResponseCookie buildCookie(String refreshToken, long refreshExpirationMillis) {
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/api/v1/auth/refresh")
+                .maxAge(refreshExpirationMillis / 1000)
+                .sameSite("Strict")
+                .build();
+        return cookie;
     }
 }
