@@ -29,7 +29,6 @@ public class StudentService {
                     return newStudent;
                 });
 
-        student.setFullName(request.fullName());
         student.setPhone(request.phone());
         student.setDob(request.dob());
 

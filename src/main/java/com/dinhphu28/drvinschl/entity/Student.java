@@ -20,9 +20,6 @@ public class Student extends AbstractAuditableEntity {
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
-
     @Column(name = "phone", nullable = false)
     private String phone;
 
