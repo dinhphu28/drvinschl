@@ -1,5 +1,6 @@
 # Stage 1: Cache Gradle dependencies
-FROM eclipse-temurin:25-jdk-alpine AS cache
+# FROM eclipse-temurin:21-jdk-alpine AS cache
+FROM eclipse-temurin:21-jdk AS cache
 WORKDIR /app
 COPY gradle/ gradle/
 COPY gradlew build.gradle settings.gradle ./
@@ -7,7 +8,8 @@ COPY gradlew build.gradle settings.gradle ./
 RUN ./gradlew dependencies --no-daemon
 
 # Stage 2: Development runtime
-FROM eclipse-temurin:25-jdk-alpine
+# FROM eclipse-temurin:21-jdk-alpine
+FROM eclipse-temurin:21-jdk
 WORKDIR /app
 COPY --from=cache /root/.gradle /root/.gradle
 COPY . .
