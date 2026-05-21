@@ -1,21 +1,17 @@
 # Stage 1: Cache Gradle dependencies
-# FROM eclipse-temurin:21-jdk-alpine AS cache
 FROM eclipse-temurin:21-jdk AS cache
 WORKDIR /app
 COPY gradle/ gradle/
 COPY gradlew build.gradle settings.gradle ./
-# Downloads dependencies without building the app
 RUN ./gradlew dependencies --no-daemon
 
 # Stage 2: Development runtime
-# FROM eclipse-temurin:21-jdk-alpine
 FROM eclipse-temurin:21-jdk
 WORKDIR /app
 COPY --from=cache /root/.gradle /root/.gradle
 COPY . .
 
-# Expose Spring Boot port and remote debugging port
 EXPOSE 8080 5005
 
-# Use bootRun with continuous build flag for hot reloading changes
-CMD ["./gradlew", "bootRun", "--continuous", "-Dspring-boot.run.jvmArguments=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"]
+CMD ["./gradlew", "bootRun", "--no-daemon", "--rerun-tasks", "-Dspring-boot.run.jvmArguments=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"]
+
