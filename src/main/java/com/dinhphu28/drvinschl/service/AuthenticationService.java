@@ -1,10 +1,13 @@
 package com.dinhphu28.drvinschl.service;
 
-import org.springframework.security.core.AuthenticationException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -45,6 +48,7 @@ public class AuthenticationService {
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .email(request.email())
+                .username(request.username())
                 .password(passwordEncoder.encode(request.password()))
                 .isEnabled(true) // NOTE: Should be false if email verification is implemented
                 .role(Role.USER)
@@ -56,14 +60,17 @@ public class AuthenticationService {
     public @NonNull AuthenticationResult authenticate(@NonNull AuthenticationRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.email(),
+                        request.username(),
                         request.password()));
 
-        var user = userRepository.findByEmail(request.email())
+        var user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new AuthenticationException("User not found") {
                 });
 
-        String accessToken = jwtService.generateToken(user);
+        Map<String, Object> extraClaims = user.getEmail() != null
+                ? Map.of("email", user.getEmail())
+                : new HashMap<>();
+        String accessToken = jwtService.generateToken(extraClaims, user);
         String refreshToken = jwtService.generateRefreshToken(user);
         saveRefreshToken(user, refreshToken);
 
@@ -100,8 +107,10 @@ public class AuthenticationService {
         }
 
         User user = storedToken.getUser();
-
-        String newAccessToken = jwtService.generateToken(user);
+        Map<String, Object> extraClaims = user.getEmail() != null
+                ? Map.of("email", user.getEmail())
+                : new HashMap<>();
+        String newAccessToken = jwtService.generateToken(extraClaims, user);
         return new AuthenticationResponse(
                 newAccessToken,
                 ACCESS_TOKEN_EXPIRATION);
