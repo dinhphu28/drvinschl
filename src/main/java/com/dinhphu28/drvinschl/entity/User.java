@@ -37,6 +37,7 @@ public class User implements UserDetails {
     @Column(name = "username", nullable = false, unique = true)
     private String username;
 
+    // WARN: Email still be not validated
     @Column(name = "email", nullable = true, unique = true)
     private String email;
 
