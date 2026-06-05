@@ -13,11 +13,14 @@ import {
   Col,
   Alert,
 } from "reactstrap";
+import { useNavigate } from "react-router-dom";
 import { login, loginWithGoogle } from "../api/auth";
+import { getCurrentUser } from "../api/user";
 import { useAuth } from "../context/useAuth";
 
 const LoginPage: React.FC = () => {
-  const { setAccessToken } = useAuth();
+  const { setAccessToken, setUser } = useAuth();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,6 +31,9 @@ const LoginPage: React.FC = () => {
     try {
       const res = await login({ email, password });
       setAccessToken(res.data.accessToken);
+      const profile = await getCurrentUser();
+      setUser(profile.data);
+      navigate("/");
     } catch {
       setError("Invalid credentials");
     }
@@ -37,6 +43,9 @@ const LoginPage: React.FC = () => {
     try {
       const result = await loginWithGoogle(res.credential);
       setAccessToken(result.data.accessToken);
+      const profile = await getCurrentUser();
+      setUser(profile.data);
+      navigate("/");
     } catch {
       setError("Google login failed");
     }

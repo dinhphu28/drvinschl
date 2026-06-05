@@ -23,7 +23,8 @@ public class AuthenticationServiceFactory {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByUsername(username)
+        return loginId -> userRepository.findByUsername(loginId)
+                .or(() -> userRepository.findByEmail(loginId))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 

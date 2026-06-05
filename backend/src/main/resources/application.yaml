@@ -13,18 +13,17 @@ spring:
 
   jpa:
     hibernate:
-      # Use 'update' for local dev, 'validate' or 'none' for production
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+      ddl-auto: validate
     show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         default_schema: ${DB_SCHEMA:sch_drvinschl}
 
-  # # 3. Database Migration Configuration (Flyway)
-  # flyway:
-  #   enabled: ${FLYWAY_ENABLED:true}
-  #   schemas: ${DB_SCHEMA:public}
+  flyway:
+    enabled: true
+    schemas: ${DB_SCHEMA:sch_drvinschl}
+    default-schema: ${DB_SCHEMA:sch_drvinschl}
 
 application:
   security:

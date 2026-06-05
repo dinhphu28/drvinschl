@@ -68,7 +68,7 @@ public class UserService {
                             .email(email)
                             .username(generateUniqueUsername(firstName, lastName))
                             .isEnabled(true)
-                            .role(Role.USER)
+                            .role(Role.HOC_VIEN)
                             .build();
                     User savedUser = userRepository.save(user);
 
