@@ -1,14 +1,26 @@
-import { Card, CardBody, CardTitle } from "reactstrap";
+import { Button, Card, CardBody } from "reactstrap";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 
-const MobileOnlyPage = () => (
-  <div className="vh-100 d-flex align-items-center justify-content-center">
-    <Card className="text-center" style={{ maxWidth: 400 }}>
-      <CardBody>
-        <CardTitle tag="h4">Ứng dụng di động</CardTitle>
-        <p>Học viên sử dụng ứng dụng di động. Vui lòng tải app tại thư mục <code>mobile/</code>.</p>
-      </CardBody>
-    </Card>
-  </div>
-);
+const MobileOnlyPage = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  return (
+    <div className="login-page">
+      <Card className="login-card">
+        <CardBody className="p-4 text-center">
+          <h3 style={{ color: "#1a237e" }}>Ứng dụng di động</h3>
+          <p className="text-muted mb-4">
+            Tài khoản học viên sử dụng ứng dụng di động trong thư mục <code>mobile/</code>.
+          </p>
+          <Button color="primary" onClick={() => { logout(); navigate("/login"); }}>
+            Đăng nhập tài khoản nhân viên
+          </Button>
+        </CardBody>
+      </Card>
+    </div>
+  );
+};
 
 export default MobileOnlyPage;

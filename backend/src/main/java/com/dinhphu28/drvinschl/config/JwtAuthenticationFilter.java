@@ -29,7 +29,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        if (request.getServletPath().contains("/api/v1/auth")) {
+        String path = request.getServletPath();
+        if (path.startsWith("/api/v1/auth/login")
+                || path.startsWith("/api/v1/auth/register")
+                || path.startsWith("/api/v1/auth/refresh")
+                || path.startsWith("/api/v1/auth/google")
+                || path.startsWith("/api/v1/auth/logout")) {
             filterChain.doFilter(request, response);
             return;
         }
