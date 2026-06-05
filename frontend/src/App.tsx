@@ -1,8 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
-import ProtectedRoute from "./routes/ProtectedRoute";
 import RoleRoute from "./routes/RoleRoute";
-import DashboardPage from "./pages/DashboardPage";
 import SalesPage from "./pages/SalesPage";
 import AccountingPage from "./pages/AccountingPage";
 import OpsPage from "./pages/OpsPage";
@@ -17,16 +15,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/mobile-only" element={<MobileOnlyPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/sales"
           element={
@@ -91,6 +82,7 @@ function App() {
             </RoleRoute>
           }
         />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

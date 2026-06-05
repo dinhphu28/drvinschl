@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
-import { Card, CardBody, CardTitle, Row, Col } from "reactstrap";
-import Layout from "../components/Layout";
+import { Row, Col } from "reactstrap";
+import AppLayout from "../components/AppLayout";
+import StatCard from "../components/StatCard";
 import api from "../api/axios";
+
+const statLabels: Record<string, string> = {
+  totalStudents: "Tổng học viên",
+  completedCourses: "Hoàn thành khóa",
+  passedExams: "Thi đạt",
+  failedExams: "Thi không đạt",
+};
 
 const DirectorPage = () => {
   const [stats, setStats] = useState<Record<string, number>>({});
@@ -11,20 +19,19 @@ const DirectorPage = () => {
   }, []);
 
   return (
-    <Layout title="Giám Đốc">
+    <AppLayout title="Giám đốc — Tổng quan">
       <Row>
         {Object.entries(stats).map(([key, value]) => (
-          <Col md="3" key={key} className="mb-3">
-            <Card>
-              <CardBody>
-                <CardTitle tag="h6">{key}</CardTitle>
-                <h3>{value}</h3>
-              </CardBody>
-            </Card>
+          <Col md="3" sm="6" key={key} className="mb-3">
+            <StatCard
+              label={statLabels[key] ?? key}
+              value={value}
+              color={key === "failedExams" ? "#c62828" : key === "passedExams" ? "#2e7d32" : "#1a237e"}
+            />
           </Col>
         ))}
       </Row>
-    </Layout>
+    </AppLayout>
   );
 };
 

@@ -1,0 +1,182 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  width: 260px;
+  background: linear-gradient(180deg, #1a237e 0%, #283593 100%);
+  color: #fff;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-sidebar-brand {
+  padding: 1.25rem 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.02em;
+}
+
+.app-sidebar-role {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.8rem;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.app-sidebar-nav {
+  flex: 1;
+  padding: 0.75rem 0;
+}
+
+.app-sidebar-link {
+  display: block;
+  padding: 0.65rem 1.5rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-size: 0.95rem;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.app-sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.app-sidebar-link.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-left-color: #90caf9;
+  color: #fff;
+  font-weight: 600;
+}
+
+.app-sidebar-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-topbar {
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0.85rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-topbar h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #1a237e;
+}
+
+.app-content {
+  padding: 1.5rem 1.75rem;
+  flex: 1;
+}
+
+.stat-card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  height: 100%;
+}
+
+.stat-card .card-body {
+  padding: 1.25rem;
+}
+
+.stat-card-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+  margin-bottom: 0.35rem;
+}
+
+.stat-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a237e;
+  margin: 0;
+}
+
+.content-card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.25rem;
+}
+
+.content-card .card-header {
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  font-weight: 600;
+  padding: 1rem 1.25rem;
+}
+
+.content-card .card-body {
+  padding: 1.25rem;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a237e 0%, #3949ab 50%, #5c6bc0 100%);
+}
+
+.login-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 420px;
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.login-brand h2 {
+  color: #1a237e;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.login-brand p {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #888;
+}
+
+.table th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+  font-weight: 600;
+  border-top: none;
+}
