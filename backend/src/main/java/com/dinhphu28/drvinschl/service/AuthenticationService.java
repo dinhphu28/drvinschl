@@ -51,25 +51,29 @@ public class AuthenticationService {
                 .username(request.username())
                 .password(passwordEncoder.encode(request.password()))
                 .isEnabled(true) // NOTE: Should be false if email verification is implemented
-                .role(Role.USER)
+                .role(Role.HOC_VIEN)
                 .build();
 
         userRepository.save(user);
     }
 
     public @NonNull AuthenticationResult authenticate(@NonNull AuthenticationRequest request) {
+        String loginId = request.username() != null ? request.username() : request.email();
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.username(),
+                        loginId,
                         request.password()));
 
-        var user = userRepository.findByUsername(request.username())
+        var user = userRepository.findByUsername(loginId)
+                .or(() -> userRepository.findByEmail(loginId))
                 .orElseThrow(() -> new AuthenticationException("User not found") {
                 });
 
-        Map<String, Object> extraClaims = user.getEmail() != null
-                ? Map.of("email", user.getEmail())
-                : new HashMap<>();
+        Map<String, Object> extraClaims = new HashMap<>();
+        if (user.getEmail() != null) {
+            extraClaims.put("email", user.getEmail());
+        }
+        extraClaims.put("role", user.getRole().name());
         String accessToken = jwtService.generateToken(extraClaims, user);
         String refreshToken = jwtService.generateRefreshToken(user);
         saveRefreshToken(user, refreshToken);
@@ -107,9 +111,11 @@ public class AuthenticationService {
         }
 
         User user = storedToken.getUser();
-        Map<String, Object> extraClaims = user.getEmail() != null
-                ? Map.of("email", user.getEmail())
-                : new HashMap<>();
+        Map<String, Object> extraClaims = new HashMap<>();
+        if (user.getEmail() != null) {
+            extraClaims.put("email", user.getEmail());
+        }
+        extraClaims.put("role", user.getRole().name());
         String newAccessToken = jwtService.generateToken(extraClaims, user);
         return new AuthenticationResponse(
                 newAccessToken,

@@ -1,37 +1,32 @@
 package com.dinhphu28.drvinschl.entity;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 @RequiredArgsConstructor
 public enum Role {
-    USER(Collections.emptySet()),
+    HOC_VIEN(Collections.emptySet()),
+    KINH_DOANH(Collections.emptySet()),
+    KE_TOAN(Collections.emptySet()),
+    GIAO_VU_KHU_VUC(Collections.emptySet()),
+    GIAO_VU_SA_HINH(Collections.emptySet()),
+    GIAO_VU_THI(Collections.emptySet()),
+    GIAO_VIEN(Collections.emptySet()),
+    QUAN_LY_KHU_VUC(Collections.emptySet()),
     ADMIN(
             Set.of(
                     Permission.ADMIN_READ,
                     Permission.ADMIN_UPDATE,
                     Permission.ADMIN_DELETE,
-                    Permission.ADMIN_CREATE,
-                    Permission.MANAGER_READ,
-                    Permission.MANAGER_UPDATE,
-                    Permission.MANAGER_DELETE,
-                    Permission.MANAGER_CREATE
-            )
-    ),
-    MANAGER(
-            Set.of(
-                    Permission.MANAGER_READ,
-                    Permission.MANAGER_UPDATE,
-                    Permission.MANAGER_DELETE,
-                    Permission.MANAGER_CREATE
-            )
-    );
+                    Permission.ADMIN_CREATE)),
+    GIAM_DOC(Collections.emptySet());
 
     @Getter
     private final Set<Permission> permissions;

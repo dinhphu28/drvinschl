@@ -6,7 +6,7 @@ export interface LoginRequest {
 }
 
 export const login = (data: LoginRequest) =>
-  api.post("/auth/login", data);
+  api.post("/auth/login", { email: data.email, username: data.email, password: data.password });
 
 export const loginWithGoogle = (idToken: string) =>
   api.post("/auth/google", { idToken });
