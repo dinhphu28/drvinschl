@@ -20,6 +20,7 @@ import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.model.CreateUserRequest;
 import com.dinhphu28.drvinschl.model.TheoryScheduleRequest;
+import com.dinhphu28.drvinschl.model.UserProfileResponse;
 import com.dinhphu28.drvinschl.service.AdminService;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,11 @@ public class AdminController {
     @PostMapping("/users")
     public User createUser(@RequestBody CreateUserRequest request) {
         return adminService.createUser(request);
+    }
+
+    @GetMapping("/users")
+    public List<UserProfileResponse> getUsers() {
+        return adminService.getUsers();
     }
 
     @GetMapping("/course-packages")

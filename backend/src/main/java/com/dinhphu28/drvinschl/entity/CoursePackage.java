@@ -41,6 +41,18 @@ public class CoursePackage extends AbstractAuditableEntity {
     @Column(name = "sa_hinh_hours")
     private Integer saHinhHours;
 
+    @Column(name = "practical_road_hours")
+    private Integer practicalRoadHours;
+
+    @Column(name = "raw_yard_hours")
+    private Integer rawYardHours;
+
+    @Column(name = "sensor_practice_hours")
+    private Integer sensorPracticeHours;
+
+    @Column(name = "sensor_exam_hours")
+    private Integer sensorExamHours;
+
     @Column(name = "active")
     private boolean active;
 }

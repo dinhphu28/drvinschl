@@ -2,6 +2,7 @@ package com.dinhphu28.drvinschl.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +14,7 @@ import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
 import com.dinhphu28.drvinschl.model.CreateUserRequest;
+import com.dinhphu28.drvinschl.model.UserProfileResponse;
 import com.dinhphu28.drvinschl.repository.CoursePackageRepository;
 import com.dinhphu28.drvinschl.repository.SystemConfigRepository;
 import com.dinhphu28.drvinschl.repository.UserRepository;
@@ -22,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AdminService {
+    private static final Set<String> RELEASE_COURSE_PACKAGE_NAMES = Set.of("A", "A1", "B Số Sàn", "B Tự Động", "C1");
+
     private final UserRepository userRepository;
     private final CoursePackageRepository coursePackageRepository;
     private final SystemConfigRepository systemConfigRepository;
@@ -41,8 +45,22 @@ public class AdminService {
         return userRepository.save(user);
     }
 
+    public List<UserProfileResponse> getUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> new UserProfileResponse(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getRole()))
+                .toList();
+    }
+
     public List<CoursePackage> getCoursePackages() {
-        return coursePackageRepository.findAll();
+        return coursePackageRepository.findAll().stream()
+                .filter(pkg -> RELEASE_COURSE_PACKAGE_NAMES.contains(pkg.getName()))
+                .toList();
     }
 
     @Transactional
@@ -113,6 +131,18 @@ public class AdminService {
         }
         if (updates.getSaHinhHours() != null) {
             existing.setSaHinhHours(updates.getSaHinhHours());
+        }
+        if (updates.getPracticalRoadHours() != null) {
+            existing.setPracticalRoadHours(updates.getPracticalRoadHours());
+        }
+        if (updates.getRawYardHours() != null) {
+            existing.setRawYardHours(updates.getRawYardHours());
+        }
+        if (updates.getSensorPracticeHours() != null) {
+            existing.setSensorPracticeHours(updates.getSensorPracticeHours());
+        }
+        if (updates.getSensorExamHours() != null) {
+            existing.setSensorExamHours(updates.getSensorExamHours());
         }
         existing.setActive(updates.isActive());
         return coursePackageRepository.save(existing);

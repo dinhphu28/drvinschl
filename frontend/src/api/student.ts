@@ -21,6 +21,11 @@ export const rateStudentTeacher = (bookingId: string, rating: number, comment: s
 export const getStudentExams = () => api.get("/students/exams");
 export const registerStudentRetake = (sessionId: string) =>
   api.post(`/students/exams/${sessionId}/retake`);
-export const registerStudentExtra = (type: "DUONG_TRUONG" | "SA_HINH", hours: number) =>
+export type StudentExtraType =
+  | "DUONG_TRUONG"
+  | "SA_HINH_THO"
+  | "SA_HINH_CAM_UNG_TAP"
+  | "SA_HINH_CAM_UNG_THI";
+export const registerStudentExtra = (type: StudentExtraType, hours: number) =>
   api.post("/students/extra-registration", null, { params: { type, hours } });
 export const getStudentExtraRegistrations = () => api.get("/students/extra-registrations");
