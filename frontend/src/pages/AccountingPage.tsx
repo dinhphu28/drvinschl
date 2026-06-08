@@ -6,6 +6,7 @@ import {
 } from "reactstrap";
 import AppLayout from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
+import StudentPicker from "../components/StudentPicker";
 import api from "../api/axios";
 
 interface Salary {
@@ -34,13 +35,15 @@ interface FuelSummary {
   recordCount: number;
 }
 
+const coursePackageOptions = ["A", "A1", "B Số Sàn", "B Tự Động", "C1"];
+
 const AccountingPage = () => {
   const [activeTab, setActiveTab] = useState("1");
   const [message, setMessage] = useState("");
 
   //Tạo tài khoản
   const [studentForm, setStudentForm] = useState({
-    username: "", email: "", password: "", fullName: "", phone: "", dob: "", coursePackage: "B2", totalFee: "15000000",
+    username: "", email: "", password: "", fullName: "", phone: "", dob: "", coursePackage: "B Số Sàn", totalFee: "15000000",
   });
 
   //Thu phí
@@ -182,7 +185,11 @@ const AccountingPage = () => {
                 </Row>
                 <Row>
                   <Col md="4"><FormGroup><Label>Ngày sinh</Label><Input type="date" value={studentForm.dob} onChange={(e) => setStudentForm({ ...studentForm, dob: e.target.value })} required /></FormGroup></Col>
-                  <Col md="4"><FormGroup><Label>Khóa học</Label><Input value={studentForm.coursePackage} onChange={(e) => setStudentForm({ ...studentForm, coursePackage: e.target.value })} /></FormGroup></Col>
+                  <Col md="4"><FormGroup><Label>Khóa học</Label>
+                    <Input type="select" value={studentForm.coursePackage} onChange={(e) => setStudentForm({ ...studentForm, coursePackage: e.target.value })}>
+                      {coursePackageOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+                    </Input>
+                  </FormGroup></Col>
                   <Col md="4"><FormGroup><Label>Học phí</Label><Input type="number" value={studentForm.totalFee} onChange={(e) => setStudentForm({ ...studentForm, totalFee: e.target.value })} /></FormGroup></Col>
                 </Row>
                 <FormGroup><Label>Mật khẩu</Label><Input type="password" value={studentForm.password} onChange={(e) => setStudentForm({ ...studentForm, password: e.target.value })} required /></FormGroup>
@@ -194,7 +201,7 @@ const AccountingPage = () => {
             <TabPane tabId="2">
               <h5 className="mb-3">Thu học phí</h5>
               <Form onSubmit={recordPayment}>
-                <FormGroup><Label>ID học viên (UUID)</Label><Input value={paymentForm.studentId} onChange={(e) => setPaymentForm({ ...paymentForm, studentId: e.target.value })} required /></FormGroup>
+                <FormGroup><Label>Học viên</Label><StudentPicker value={paymentForm.studentId} onChange={(studentId) => setPaymentForm({ ...paymentForm, studentId })} required /></FormGroup>
                 <Row>
                   <Col md="6">
                     <FormGroup><Label>Loại</Label>
@@ -217,7 +224,7 @@ const AccountingPage = () => {
             <TabPane tabId="3">
               <h5 className="mb-3">Hoàn phí</h5>
               <Form onSubmit={recordRefund}>
-                <FormGroup><Label>ID học viên</Label><Input value={refundForm.studentId} onChange={(e) => setRefundForm({ ...refundForm, studentId: e.target.value })} required /></FormGroup>
+                <FormGroup><Label>Học viên</Label><StudentPicker value={refundForm.studentId} onChange={(studentId) => setRefundForm({ ...refundForm, studentId })} required /></FormGroup>
                 <FormGroup><Label>Số tiền hoàn</Label><Input type="number" value={refundForm.amount} onChange={(e) => setRefundForm({ ...refundForm, amount: e.target.value })} required /></FormGroup>
                 <FormGroup><Label>Ghi chú</Label><Input type="textarea" rows={3} value={refundForm.note} onChange={(e) => setRefundForm({ ...refundForm, note: e.target.value })} /></FormGroup>
                 <Button color="danger">Ghi nhận hoàn phí</Button>

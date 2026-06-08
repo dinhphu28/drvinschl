@@ -22,6 +22,7 @@ import com.dinhphu28.drvinschl.repository.ExtraRegistrationRepository;
 import com.dinhphu28.drvinschl.repository.LearningProgressRepository;
 import com.dinhphu28.drvinschl.repository.PaymentRecordRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
+import com.dinhphu28.drvinschl.repository.SystemConfigRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +34,7 @@ public class StudentService {
     private final PaymentRecordRepository paymentRecordRepository;
     private final ExtraRegistrationRepository extraRegistrationRepository;
     private final UserContextService userContextService;
+    private final SystemConfigRepository systemConfigRepository;
 
     public StudentProfileResponse getProfile(String username) {
         Student student = userContextService.requireStudent(username);
@@ -77,12 +79,27 @@ public class StudentService {
     @Transactional
     public ExtraRegistration registerExtra(String username, ExtraRegistration.ExtraType type, Integer hours, BigDecimal fee) {
         Student student = userContextService.requireStudent(username);
+        Integer requestedHours = hours != null && hours > 0 ? hours : 1;
+        BigDecimal resolvedFee = fee != null ? fee : getExtraHourPrice(type).multiply(BigDecimal.valueOf(requestedHours));
         ExtraRegistration reg = new ExtraRegistration();
         reg.setStudent(student);
         reg.setExtraType(type);
-        reg.setHours(hours);
-        reg.setFee(fee);
+        reg.setHours(requestedHours);
+        reg.setFee(resolvedFee);
         return extraRegistrationRepository.save(reg);
+    }
+
+    private BigDecimal getExtraHourPrice(ExtraRegistration.ExtraType type) {
+        String key = switch (type) {
+            case DUONG_TRUONG -> "GIA_GIO_DUONG_TRUONG";
+            case SA_HINH, SA_HINH_THO -> "GIA_GIO_SA_HINH_THO";
+            case SA_HINH_CAM_UNG_TAP -> "GIA_GIO_SA_HINH_CAM_UNG_TAP";
+            case SA_HINH_CAM_UNG_THI -> "GIA_GIO_SA_HINH_CAM_UNG_THI";
+        };
+        return systemConfigRepository.findByConfigKey(key)
+                .or(() -> systemConfigRepository.findByConfigKey("gia_hoc_them"))
+                .map(c -> new BigDecimal(c.getConfigValue()))
+                .orElse(new BigDecimal("500000"));
     }
 
     private void initLearningProgress(Student student) {

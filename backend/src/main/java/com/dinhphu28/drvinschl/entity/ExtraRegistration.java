@@ -20,7 +20,10 @@ public class ExtraRegistration extends AbstractAuditableEntity {
 
     public enum ExtraType {
         DUONG_TRUONG,
-        SA_HINH
+        SA_HINH,
+        SA_HINH_THO,
+        SA_HINH_CAM_UNG_TAP,
+        SA_HINH_CAM_UNG_THI
     }
 
     @ManyToOne(optional = false)

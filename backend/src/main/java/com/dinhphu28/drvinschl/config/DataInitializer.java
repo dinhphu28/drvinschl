@@ -51,7 +51,7 @@ public class DataInitializer {
                 student.setFullName("Nguyen Van A");
                 student.setPhone("0901234567");
                 student.setDob(LocalDate.of(2000, 1, 15));
-                student.setCoursePackage("B2");
+                student.setCoursePackage("B Số Sàn");
                 student.setTotalFee(new BigDecimal("15000000"));
                 student.setPaidFee(new BigDecimal("7500000"));
                 student.setCourseStatus(CourseStatus.DANG_HOC);
@@ -59,22 +59,20 @@ public class DataInitializer {
                 student.setOpeningDate(LocalDate.now().minusMonths(1));
                 studentRepository.save(student);
 
-                CoursePackage pkg = new CoursePackage();
-                pkg.setName("B2");
-                pkg.setPrice(new BigDecimal("15000000"));
-                pkg.setTheoryHours(24);
-                pkg.setSimulationHours(8);
-                pkg.setBasic4hHours(4);
-                pkg.setCabinHours(2);
-                pkg.setDatHours(16);
-                pkg.setDatKm(200);
-                pkg.setSaHinhHours(10);
-                pkg.setActive(true);
-                coursePackageRepository.save(pkg);
-
-                upsertConfig("gia_hoc_them", "500000", "Giá học thêm mỗi giờ");
-                upsertConfig("phi_thi_lai", "500000", "Phí thi lại sát hạch");
             }
+            upsertCoursePackage("A", "6000000", 12, 0, 0, 0, 0, 0, 4, 6, 2, 1);
+            upsertCoursePackage("A1", "6500000", 12, 0, 0, 0, 0, 0, 4, 6, 2, 1);
+            upsertCoursePackage("B Số Sàn", "15000000", 24, 8, 4, 2, 16, 200, 10, 6, 4, 2);
+            upsertCoursePackage("B Tự Động", "16000000", 24, 8, 4, 0, 16, 200, 10, 6, 4, 2);
+            upsertCoursePackage("C1", "20000000", 28, 8, 4, 2, 24, 300, 12, 8, 4, 2);
+            deactivateLegacyPackage("B2");
+
+            upsertConfig("GIA_GIO_DUONG_TRUONG", "500000", "Giá thêm giờ thực hành đường trường");
+            upsertConfig("GIA_GIO_SA_HINH_THO", "450000", "Giá thêm giờ sa hình thô");
+            upsertConfig("GIA_GIO_SA_HINH_CAM_UNG_TAP", "550000", "Giá thêm giờ sa hình cảm ứng tập");
+            upsertConfig("GIA_GIO_SA_HINH_CAM_UNG_THI", "650000", "Giá thêm giờ sa hình cảm ứng thi");
+            upsertConfig("THI_LAI_TOT_NGHIEP", "500000", "Phí thi lại tốt nghiệp");
+            upsertConfig("THI_LAI_SAT_HACH", "700000", "Phí thi lại sát hạch");
         };
     }
 
@@ -99,5 +97,45 @@ public class DataInitializer {
             config.setDescription(desc);
             systemConfigRepository.save(config);
         }
+    }
+
+    private void deactivateLegacyPackage(String name) {
+        coursePackageRepository.findByName(name).ifPresent(pkg -> {
+            pkg.setActive(false);
+            coursePackageRepository.save(pkg);
+        });
+    }
+
+    private void upsertCoursePackage(
+            String name,
+            String price,
+            int theoryHours,
+            int simulationHours,
+            int basic4hHours,
+            int cabinHours,
+            int datHours,
+            int datKm,
+            int practicalRoadHours,
+            int rawYardHours,
+            int sensorPracticeHours,
+            int sensorExamHours) {
+        CoursePackage pkg = coursePackageRepository.findByName(name).orElseGet(CoursePackage::new);
+        pkg.setName(name);
+        if (pkg.getPrice() == null) {
+            pkg.setPrice(new BigDecimal(price));
+        }
+        pkg.setTheoryHours(theoryHours);
+        pkg.setSimulationHours(simulationHours);
+        pkg.setBasic4hHours(basic4hHours);
+        pkg.setCabinHours(cabinHours);
+        pkg.setDatHours(datHours);
+        pkg.setDatKm(datKm);
+        pkg.setSaHinhHours(rawYardHours + sensorPracticeHours + sensorExamHours);
+        pkg.setPracticalRoadHours(practicalRoadHours);
+        pkg.setRawYardHours(rawYardHours);
+        pkg.setSensorPracticeHours(sensorPracticeHours);
+        pkg.setSensorExamHours(sensorExamHours);
+        pkg.setActive(true);
+        coursePackageRepository.save(pkg);
     }
 }

@@ -11,7 +11,8 @@ interface CoursePackage {
   id: string; name: string; price: number;
   theoryHours: number; simulationHours: number; basic4hHours: number;
   cabinHours: number; datHours: number; datKm: number;
-  saHinhHours: number; active: boolean;
+  saHinhHours: number; practicalRoadHours: number; rawYardHours: number;
+  sensorPracticeHours: number; sensorExamHours: number; active: boolean;
 }
 interface SystemConfig { configKey: string; configValue: string; description: string; }
 interface UserRecord { id: string; username: string; email: string; firstName: string; lastName: string; role: string; }
@@ -24,14 +25,37 @@ interface ScheduleDraft {
   notes: string;
 }
 
-const emptyPkg = { name: "", price: 0, theoryHours: 0, simulationHours: 0, basic4hHours: 0, cabinHours: 0, datHours: 0, datKm: 0, saHinhHours: 0, active: true };
+const packageNameOptions = ["A", "A1", "B Số Sàn", "B Tự Động", "C1"];
+const emptyPkg = {
+  name: "B Số Sàn",
+  price: 0,
+  theoryHours: 0,
+  simulationHours: 0,
+  basic4hHours: 0,
+  cabinHours: 0,
+  datHours: 0,
+  datKm: 0,
+  saHinhHours: 0,
+  practicalRoadHours: 0,
+  rawYardHours: 0,
+  sensorPracticeHours: 0,
+  sensorExamHours: 0,
+  active: true,
+};
 const retakeFeeKeys = [
-  { value: "THI_LAI_LY_THUYET", label: "Lý thuyết" }, { value: "THI_LAI_MO_PHONG", label: "Mô phỏng" },
-  { value: "THI_LAI_SA_HINH", label: "Sa hình" }, { value: "THI_LAI_DUONG_TRUONG", label: "Đường trường" },
+  { value: "THI_LAI_TOT_NGHIEP", label: "Thi lại tốt nghiệp" },
+  { value: "THI_LAI_SAT_HACH", label: "Thi lại sát hạch" },
 ];
 const extraHourKeys = [
-  { value: "GIA_GIO_DUONG_TRUONG", label: "Đường trường" }, { value: "GIA_GIO_SA_HINH", label: "Sa hình" },
+  { value: "GIA_GIO_DUONG_TRUONG", label: "Thực hành đường trường" },
+  { value: "GIA_GIO_SA_HINH_THO", label: "Sa hình thô" },
+  { value: "GIA_GIO_SA_HINH_CAM_UNG_TAP", label: "Sa hình cảm ứng tập" },
+  { value: "GIA_GIO_SA_HINH_CAM_UNG_THI", label: "Sa hình cảm ứng thi" },
 ];
+const configLabels = [...retakeFeeKeys, ...extraHourKeys].reduce<Record<string, string>>((acc, item) => {
+  acc[item.value] = item.label;
+  return acc;
+}, {});
 const scheduleModules = [
   { value: "LY_THUYET", label: "Lý thuyết" }, { value: "MO_PHONG", label: "Mô phỏng" },
 ];
@@ -72,7 +96,22 @@ const AdminPage = () => {
   useEffect(() => { loadUsers(); }, []);
   const toggle = (t: string) => { if (activeTab !== t) setActiveTab(t); };
   const startEditPkg = (p: CoursePackage) => {
-    setPkgForm({ name: p.name, price: p.price, theoryHours: p.theoryHours, simulationHours: p.simulationHours, basic4hHours: p.basic4hHours, cabinHours: p.cabinHours, datHours: p.datHours, datKm: p.datKm, saHinhHours: p.saHinhHours, active: p.active });
+    setPkgForm({
+      name: p.name,
+      price: p.price,
+      theoryHours: p.theoryHours ?? 0,
+      simulationHours: p.simulationHours ?? 0,
+      basic4hHours: p.basic4hHours ?? 0,
+      cabinHours: p.cabinHours ?? 0,
+      datHours: p.datHours ?? 0,
+      datKm: p.datKm ?? 0,
+      saHinhHours: p.saHinhHours ?? 0,
+      practicalRoadHours: p.practicalRoadHours ?? 0,
+      rawYardHours: p.rawYardHours ?? 0,
+      sensorPracticeHours: p.sensorPracticeHours ?? 0,
+      sensorExamHours: p.sensorExamHours ?? 0,
+      active: p.active,
+    });
     setEditingPkg(p.id);
   };
   const cancelEditPkg = () => { setPkgForm(emptyPkg); setEditingPkg(null); };
@@ -80,10 +119,10 @@ const AdminPage = () => {
     e.preventDefault();
     try {
       if (editingPkgId) {
-        await api.put(`/admin/course-packages/${editingPkgId}`, pkgForm);
+        await api.put(`/admin/course-packages/${editingPkgId}`, { ...pkgForm, saHinhHours: pkgForm.rawYardHours + pkgForm.sensorPracticeHours + pkgForm.sensorExamHours });
         flash("Cập nhật gói học thành công");
       } else {
-        await api.post("/admin/course-packages", pkgForm);
+        await api.post("/admin/course-packages", { ...pkgForm, saHinhHours: pkgForm.rawYardHours + pkgForm.sensorPracticeHours + pkgForm.sensorExamHours });
         flash("Tạo gói học thành công");
       }
       setPkgForm(emptyPkg); setEditingPkg(null); loadPackages();
@@ -156,7 +195,9 @@ const AdminPage = () => {
   };
   const renderConfigValue = (config: SystemConfig) => {
     if (!config.configKey.startsWith("SCHEDULE_")) {
-      return config.configValue;
+      return configLabels[config.configKey] && !Number.isNaN(Number(config.configValue))
+        ? `${Number(config.configValue).toLocaleString("vi-VN")} đ`
+        : config.configValue;
     }
     try {
       const parsed = JSON.parse(config.configValue) as { day?: string; time?: string; location?: string; notes?: string };
@@ -198,21 +239,32 @@ const AdminPage = () => {
                     <CardHeader>{editingPkgId ? "Chỉnh sửa gói học" : "Tạo gói học mới"}</CardHeader>
                     <CardBody>
                       <Form onSubmit={submitPkg}>
-                        <FormGroup><Label>Tên gói</Label><Input value={pkgForm.name} onChange={(e) => setPkgForm({ ...pkgForm, name: e.target.value })} required /></FormGroup>
+                        <FormGroup><Label>Hạng / gói học</Label>
+                          <Input type="select" value={pkgForm.name} onChange={(e) => setPkgForm({ ...pkgForm, name: e.target.value })} required>
+                            {packageNameOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+                          </Input>
+                        </FormGroup>
                         <FormGroup><Label>Giá (VNĐ)</Label><Input type="number" value={pkgForm.price} onChange={(e) => setPkgForm({ ...pkgForm, price: Number(e.target.value) })} required /></FormGroup>
                         <Row>
                           <Col><FormGroup><Label>Tiết lý thuyết</Label><Input type="number" value={pkgForm.theoryHours} onChange={(e) => setPkgForm({ ...pkgForm, theoryHours: Number(e.target.value) })} /></FormGroup></Col>
-                          <Col><FormGroup><Label>Tiết mô phỏng</Label><Input type="number" value={pkgForm.simulationHours} onChange={(e) => setPkgForm({ ...pkgForm, simulationHours: Number(e.target.value) })} /></FormGroup></Col>
+                          <Col><FormGroup><Label>Giờ mô phỏng</Label><Input type="number" value={pkgForm.simulationHours} onChange={(e) => setPkgForm({ ...pkgForm, simulationHours: Number(e.target.value) })} /></FormGroup></Col>
                         </Row>
                         <Row>
                           <Col><FormGroup><Label>Cơ bản 4h</Label><Input type="number" value={pkgForm.basic4hHours} onChange={(e) => setPkgForm({ ...pkgForm, basic4hHours: Number(e.target.value) })} /></FormGroup></Col>
-                          <Col><FormGroup><Label>Hộp số sàn</Label><Input type="number" value={pkgForm.cabinHours} onChange={(e) => setPkgForm({ ...pkgForm, cabinHours: Number(e.target.value) })} /></FormGroup></Col>
+                          <Col><FormGroup><Label>Cabin</Label><Input type="number" value={pkgForm.cabinHours} onChange={(e) => setPkgForm({ ...pkgForm, cabinHours: Number(e.target.value) })} /></FormGroup></Col>
                         </Row>
                         <Row>
                           <Col><FormGroup><Label>DAT giờ</Label><Input type="number" value={pkgForm.datHours} onChange={(e) => setPkgForm({ ...pkgForm, datHours: Number(e.target.value) })} /></FormGroup></Col>
                           <Col><FormGroup><Label>DAT km</Label><Input type="number" value={pkgForm.datKm} onChange={(e) => setPkgForm({ ...pkgForm, datKm: Number(e.target.value) })} /></FormGroup></Col>
                         </Row>
-                        <FormGroup><Label>Sa hình giờ</Label><Input type="number" value={pkgForm.saHinhHours} onChange={(e) => setPkgForm({ ...pkgForm, saHinhHours: Number(e.target.value) })} /></FormGroup>
+                        <Row>
+                          <Col><FormGroup><Label>Thực hành đường trường</Label><Input type="number" value={pkgForm.practicalRoadHours} onChange={(e) => setPkgForm({ ...pkgForm, practicalRoadHours: Number(e.target.value) })} /></FormGroup></Col>
+                          <Col><FormGroup><Label>Sa hình thô</Label><Input type="number" value={pkgForm.rawYardHours} onChange={(e) => setPkgForm({ ...pkgForm, rawYardHours: Number(e.target.value) })} /></FormGroup></Col>
+                        </Row>
+                        <Row>
+                          <Col><FormGroup><Label>Sa hình cảm ứng tập</Label><Input type="number" value={pkgForm.sensorPracticeHours} onChange={(e) => setPkgForm({ ...pkgForm, sensorPracticeHours: Number(e.target.value) })} /></FormGroup></Col>
+                          <Col><FormGroup><Label>Sa hình cảm ứng thi</Label><Input type="number" value={pkgForm.sensorExamHours} onChange={(e) => setPkgForm({ ...pkgForm, sensorExamHours: Number(e.target.value) })} /></FormGroup></Col>
+                        </Row>
                         <FormGroup check><Label check><Input type="checkbox" checked={pkgForm.active} onChange={(e) => setPkgForm({ ...pkgForm, active: e.target.checked })} /> Hoạt động</Label></FormGroup>
                         <Row>
                           <Col><Button color="primary" type="submit">{editingPkgId ? "Cập nhật" : "Tạo gói"}</Button></Col>
@@ -228,15 +280,15 @@ const AdminPage = () => {
                     <CardBody className="p-0">
                       {packages.length === 0 ? <EmptyState message="Chưa có gói học nào" /> : (
                         <Table responsive hover className="mb-0">
-                          <thead><tr><th>Tên gói</th><th>Giá</th><th>Lý thuyết</th><th>DAT</th><th>Sa hình</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                          <thead><tr><th>Gói</th><th>Giá</th><th>Lý thuyết</th><th>Thực hành</th><th>Sa hình</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                           <tbody>
                             {packages.map((p) => (
                               <tr key={p.id}>
                                 <td><strong>{p.name}</strong></td>
                                 <td>{Number(p.price).toLocaleString()} đ</td>
-                                <td>{p.theoryHours}h</td>
-                                <td>{p.datHours}h / {p.datKm}km</td>
-                                <td>{p.saHinhHours}h</td>
+                                <td>{p.theoryHours}h, mô phỏng {p.simulationHours}h</td>
+                                <td>Đường trường {p.practicalRoadHours ?? p.datHours}h, Cabin {p.cabinHours}h, DAT {p.datHours}h/{p.datKm}km</td>
+                                <td>Thô {p.rawYardHours ?? p.saHinhHours}h, CƯ tập {p.sensorPracticeHours ?? 0}h, CƯ thi {p.sensorExamHours ?? 0}h</td>
                                 <td><Badge color={p.active ? "success" : "secondary"}>{p.active ? "Hoạt động" : "Tắt"}</Badge></td>
                                 <td>
                                   <Button color="info" size="sm" className="me-1" onClick={() => startEditPkg(p)}>Sửa</Button>
@@ -262,7 +314,7 @@ const AdminPage = () => {
                         <Table responsive className="mb-0">
                           <thead><tr><th>Khóa</th><th>Giá trị</th><th>Mô tả</th></tr></thead>
                           <tbody>{configs.map((c) => (
-                            <tr key={c.configKey}><td><code>{c.configKey}</code></td><td>{renderConfigValue(c)}</td><td>{c.description}</td></tr>
+                            <tr key={c.configKey}><td>{configLabels[c.configKey] ?? <code>{c.configKey}</code>}</td><td>{renderConfigValue(c)}</td><td>{c.description}</td></tr>
                           ))}</tbody>
                         </Table>
                       )}

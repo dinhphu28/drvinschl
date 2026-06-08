@@ -6,6 +6,7 @@ import {
 import AppLayout from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
+import StudentPicker from "../components/StudentPicker";
 import api from "../api/axios";
 
 interface Student {
@@ -87,8 +88,9 @@ const SalesPage = () => {
   const createContract = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post("/sales/contracts", {
-        ...contractForm,
+      await api.post(`/sales/contracts/${contractForm.studentId}`, {
+        appointmentDate: contractForm.appointmentDate,
+        signedDate: contractForm.signedDate,
         contractAmount: Number(contractForm.contractAmount),
       });
       setContractForm({ studentId: "", appointmentDate: "", signedDate: "", contractAmount: "" });
@@ -111,11 +113,13 @@ const SalesPage = () => {
   const updateDossier = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.put(`/sales/students/${dossierForm.studentId}/dossier`, {
-        registrationForm: dossierForm.registrationForm,
-        photo: dossierForm.photo,
-        healthCheck: dossierForm.healthCheck,
-        fee: dossierForm.fee,
+      await api.put(`/sales/students/${dossierForm.studentId}/dossier`, null, {
+        params: {
+          registrationForm: dossierForm.registrationForm,
+          photo: dossierForm.photo,
+          healthCheck: dossierForm.healthCheck,
+          fee: dossierForm.fee,
+        },
       });
       setDossierForm({ studentId: "", registrationForm: false, photo: false, healthCheck: false, fee: false });
       alert("Đã cập nhật hồ sơ");
@@ -221,13 +225,8 @@ const SalesPage = () => {
                 <Row>
                   <Col md="6">
                     <FormGroup>
-                      <Label>ID học viên</Label>
-                      <Input
-                        value={contractForm.studentId}
-                        onChange={(e) => setContractForm({ ...contractForm, studentId: e.target.value })}
-                        placeholder="UUID học viên"
-                        required
-                      />
+                      <Label>Học viên</Label>
+                      <StudentPicker value={contractForm.studentId} onChange={(studentId) => setContractForm({ ...contractForm, studentId })} required />
                     </FormGroup>
                   </Col>
                   <Col md="6">
@@ -313,13 +312,8 @@ const SalesPage = () => {
               <h5 className="mb-3">Cập nhật hồ sơ học viên</h5>
               <Form onSubmit={updateDossier}>
                 <FormGroup>
-                  <Label>ID học viên</Label>
-                  <Input
-                    value={dossierForm.studentId}
-                    onChange={(e) => setDossierForm({ ...dossierForm, studentId: e.target.value })}
-                    placeholder="UUID học viên"
-                    required
-                  />
+                  <Label>Học viên</Label>
+                  <StudentPicker value={dossierForm.studentId} onChange={(studentId) => setDossierForm({ ...dossierForm, studentId })} required />
                 </FormGroup>
                 <div className="my-3">
                   <div className="form-check">

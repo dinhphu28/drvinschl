@@ -1,6 +1,5 @@
 package com.dinhphu28.drvinschl.controller;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -116,9 +115,8 @@ public class StudentController {
     public ExtraRegistration registerExtra(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam ExtraRegistration.ExtraType type,
-            @RequestParam(required = false) Integer hours,
-            @RequestParam(required = false) BigDecimal fee) {
-        return studentService.registerExtra(userDetails.getUsername(), type, hours, fee);
+            @RequestParam(required = false) Integer hours) {
+        return studentService.registerExtra(userDetails.getUsername(), type, hours, null);
     }
 
     @PreAuthorize("hasRole('HOC_VIEN')")

@@ -68,6 +68,10 @@ CREATE TABLE IF NOT EXISTS tbl_course_package (
     dat_hours INTEGER,
     dat_km INTEGER,
     sa_hinh_hours INTEGER,
+    practical_road_hours INTEGER,
+    raw_yard_hours INTEGER,
+    sensor_practice_hours INTEGER,
+    sensor_exam_hours INTEGER,
     active BOOLEAN DEFAULT TRUE
 );
 

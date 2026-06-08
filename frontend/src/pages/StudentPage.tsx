@@ -33,6 +33,7 @@ import {
   rateStudentTeacher,
   registerStudentExtra,
   registerStudentRetake,
+  type StudentExtraType,
   type StudentSessionType,
 } from "../api/student";
 
@@ -155,7 +156,7 @@ const StudentPage = () => {
   const [ratingBookingId, setRatingBookingId] = useState("");
   const [ratingValue, setRatingValue] = useState("5");
   const [ratingComment, setRatingComment] = useState("");
-  const [extraType, setExtraType] = useState<"DUONG_TRUONG" | "SA_HINH">("DUONG_TRUONG");
+  const [extraType, setExtraType] = useState<StudentExtraType>("DUONG_TRUONG");
   const [extraHours, setExtraHours] = useState("1");
   const [message, setMessage] = useState("");
 
@@ -405,9 +406,11 @@ const StudentPage = () => {
                       <Form onSubmit={handleRegisterExtra}>
                         <FormGroup>
                           <Label>Loại</Label>
-                          <Input type="select" value={extraType} onChange={(e) => setExtraType(e.target.value as "DUONG_TRUONG" | "SA_HINH")}>
-                            <option value="DUONG_TRUONG">Đường trường</option>
-                            <option value="SA_HINH">Sa hình</option>
+                          <Input type="select" value={extraType} onChange={(e) => setExtraType(e.target.value as StudentExtraType)}>
+                            <option value="DUONG_TRUONG">Thực hành đường trường</option>
+                            <option value="SA_HINH_THO">Sa hình thô</option>
+                            <option value="SA_HINH_CAM_UNG_TAP">Sa hình cảm ứng tập</option>
+                            <option value="SA_HINH_CAM_UNG_THI">Sa hình cảm ứng thi</option>
                           </Input>
                         </FormGroup>
                         <FormGroup>

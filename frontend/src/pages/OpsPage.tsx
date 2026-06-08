@@ -7,6 +7,7 @@ import {
 import AppLayout from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
+import StudentPicker from "../components/StudentPicker";
 import api from "../api/axios";
 
 const SessionTypes = ["CO_BAN_4H", "CABIN", "DAT", "SA_HINH_THO", "SA_HINH_CAM_UNG"];
@@ -321,7 +322,7 @@ const OpsPage = () => {
               <Form onSubmit={handleAssignCabinStudent}>
                 <Row>
                   <Col md="6"><FormGroup><Label>ID lịch cabin (UUID)</Label><Input value={cabinAssign.slotId} onChange={(e) => setCabinAssign({ ...cabinAssign, slotId: e.target.value })} required /></FormGroup></Col>
-                  <Col md="6"><FormGroup><Label>ID học viên (UUID)</Label><Input value={cabinAssign.studentId} onChange={(e) => setCabinAssign({ ...cabinAssign, studentId: e.target.value })} required /></FormGroup></Col>
+                  <Col md="6"><FormGroup><Label>Học viên</Label><StudentPicker value={cabinAssign.studentId} onChange={(studentId) => setCabinAssign({ ...cabinAssign, studentId })} required /></FormGroup></Col>
                 </Row>
                 <Button color="primary">Phân bổ</Button>
               </Form>
@@ -330,7 +331,7 @@ const OpsPage = () => {
             {/* Tab 5: Hoàn thành khóa */}
             <TabPane tabId="5">
               <Form onSubmit={handleCompleteCourse}>
-                <FormGroup><Label>ID học viên (UUID)</Label><Input value={completeForm.studentId} onChange={(e) => setCompleteForm({ studentId: e.target.value })} required /></FormGroup>
+                <FormGroup><Label>Học viên</Label><StudentPicker value={completeForm.studentId} onChange={(studentId) => setCompleteForm({ studentId })} required /></FormGroup>
                 <Button color="primary">Hoàn thành khóa học</Button>
               </Form>
             </TabPane>

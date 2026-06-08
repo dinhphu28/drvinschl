@@ -65,9 +65,7 @@ public class ExamService {
         ExamSession session = examSessionRepository.findById(examSessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam session not found"));
 
-        BigDecimal retakeFee = systemConfigRepository.findByConfigKey("phi_thi_lai")
-                .map(c -> new BigDecimal(c.getConfigValue()))
-                .orElse(new BigDecimal("500000"));
+        BigDecimal retakeFee = getRetakeFee(session.getExamType());
 
         ExamRegistration reg = new ExamRegistration();
         reg.setExamSession(session);
@@ -141,11 +139,17 @@ public class ExamService {
         ExamRegistration reg = examRegistrationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Registration not found"));
         reg.setRetake(true);
-        BigDecimal retakeFee = systemConfigRepository.findByConfigKey("phi_thi_lai")
-                .map(c -> new BigDecimal(c.getConfigValue()))
-                .orElse(new BigDecimal("500000"));
+        BigDecimal retakeFee = getRetakeFee(reg.getExamSession().getExamType());
         reg.setRetakeFee(retakeFee);
         return examRegistrationRepository.save(reg);
+    }
+
+    private BigDecimal getRetakeFee(ExamType type) {
+        String key = type == ExamType.TOT_NGHIEP ? "THI_LAI_TOT_NGHIEP" : "THI_LAI_SAT_HACH";
+        return systemConfigRepository.findByConfigKey(key)
+                .or(() -> systemConfigRepository.findByConfigKey("phi_thi_lai"))
+                .map(c -> new BigDecimal(c.getConfigValue()))
+                .orElse(new BigDecimal("500000"));
     }
 
     private boolean isEligible(Student student, ExamType type) {
