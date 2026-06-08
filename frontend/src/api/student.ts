@@ -19,8 +19,15 @@ export const cancelStudentBooking = (bookingId: string) =>
 export const rateStudentTeacher = (bookingId: string, rating: number, comment: string) =>
   api.post(`/students/bookings/${bookingId}/rate`, { rating, comment });
 export const getStudentExams = () => api.get("/students/exams");
-export const registerStudentRetake = (sessionId: string) =>
-  api.post(`/students/exams/${sessionId}/retake`);
+export type ExamRetakePart =
+  | "LY_THUYET"
+  | "MO_PHONG"
+  | "SA_HINH"
+  | "DUONG_TRUONG"
+  | "TOT_NGHIEP"
+  | "SAT_HACH";
+export const registerStudentRetake = (sessionId: string, part?: ExamRetakePart) =>
+  api.post(`/students/exams/${sessionId}/retake`, null, { params: part ? { part } : {} });
 export type StudentExtraType =
   | "DUONG_TRUONG"
   | "SA_HINH_THO"

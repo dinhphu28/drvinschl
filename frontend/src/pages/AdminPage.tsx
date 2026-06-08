@@ -16,6 +16,18 @@ interface CoursePackage {
 }
 interface SystemConfig { configKey: string; configValue: string; description: string; }
 interface UserRecord { id: string; username: string; email: string; firstName: string; lastName: string; role: string; }
+interface VehicleRecord {
+  id: string;
+  licensePlate: string;
+  model?: string;
+  registrationExpiry?: string;
+  learnerLicenseExpiry?: string;
+  insuranceExpiry?: string;
+  mortgageInfo?: string;
+  ownershipInfo?: string;
+  currentOdo?: number;
+  active: boolean;
+}
 interface ScheduleDraft {
   module: string;
   dayPattern: string;
@@ -45,6 +57,10 @@ const emptyPkg = {
 const retakeFeeKeys = [
   { value: "THI_LAI_TOT_NGHIEP", label: "Thi lại tốt nghiệp" },
   { value: "THI_LAI_SAT_HACH", label: "Thi lại sát hạch" },
+  { value: "THI_LAI_LY_THUYET", label: "Thi lại lý thuyết" },
+  { value: "THI_LAI_MO_PHONG", label: "Thi lại mô phỏng" },
+  { value: "THI_LAI_SA_HINH", label: "Thi lại sa hình" },
+  { value: "THI_LAI_DUONG_TRUONG", label: "Thi lại đường trường" },
 ];
 const extraHourKeys = [
   { value: "GIA_GIO_DUONG_TRUONG", label: "Thực hành đường trường" },
@@ -67,6 +83,17 @@ const emptyScheduleDraft: ScheduleDraft = {
   location: "",
   notes: "",
 };
+const emptyVehicleForm = {
+  licensePlate: "",
+  model: "",
+  registrationExpiry: "",
+  learnerLicenseExpiry: "",
+  insuranceExpiry: "",
+  mortgageInfo: "",
+  ownershipInfo: "",
+  currentOdo: "0",
+  active: true,
+};
 const roleEntries = [
   { value: "KINH_DOANH", label: "Kinh doanh" }, { value: "KE_TOAN", label: "Kế toán" },
   { value: "GIAO_VU_KHU_VUC", label: "Giáo vụ khu vực" }, { value: "GIAO_VU_SA_HINH", label: "Giáo vụ sa hình" },
@@ -86,14 +113,18 @@ const AdminPage = () => {
   const [scheduleForm, setScheduleForm] = useState<ScheduleDraft>(emptyScheduleDraft);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [newUser, setNewUser] = useState({ username: "", email: "", firstName: "", lastName: "", password: "", role: "KINH_DOANH" });
+  const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
+  const [vehicleForm, setVehicleForm] = useState(emptyVehicleForm);
 
   const flash = (m: string) => { setMessage(m); setTimeout(() => setMessage(""), 3000); };
   const loadPackages = () => api.get<CoursePackage[]>("/admin/course-packages").then((r) => setPackages(r.data));
   const loadConfigs = () => api.get<SystemConfig[]>("/admin/configs").then((r) => setConfigs(r.data));
   const loadUsers = () => api.get<UserRecord[]>("/admin/users").then((r) => setUsers(r.data)).catch(() => setUsers([]));
+  const loadVehicles = () => api.get<VehicleRecord[]>("/vehicles").then((r) => setVehicles(r.data)).catch(() => setVehicles([]));
   useEffect(() => { loadPackages(); }, []);
   useEffect(() => { loadConfigs(); }, []);
   useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { loadVehicles(); }, []);
   const toggle = (t: string) => { if (activeTab !== t) setActiveTab(t); };
   const startEditPkg = (p: CoursePackage) => {
     setPkgForm({
@@ -221,6 +252,21 @@ const AdminPage = () => {
       loadUsers();
     } catch { flash("Không thể tạo tài khoản"); }
   };
+  const createVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post("/vehicles", {
+        ...vehicleForm,
+        registrationExpiry: vehicleForm.registrationExpiry || undefined,
+        learnerLicenseExpiry: vehicleForm.learnerLicenseExpiry || undefined,
+        insuranceExpiry: vehicleForm.insuranceExpiry || undefined,
+        currentOdo: Number(vehicleForm.currentOdo || 0),
+      });
+      flash("Tạo xe thành công");
+      setVehicleForm(emptyVehicleForm);
+      loadVehicles();
+    } catch { flash("Không thể tạo xe"); }
+  };
   return (
     <AppLayout title="Quản trị hệ thống">
       {message && <div className={`alert ${message.startsWith("Không") ? "alert-danger" : "alert-success"} alert-dismissible fade show mt-2`}>{message}</div>}
@@ -230,6 +276,7 @@ const AdminPage = () => {
             <NavItem><NavLink className={activeTab === "1" ? "active" : ""} onClick={() => toggle("1")}>Gói học</NavLink></NavItem>
             <NavItem><NavLink className={activeTab === "2" ? "active" : ""} onClick={() => toggle("2")}>Cấu hình hệ thống</NavLink></NavItem>
             <NavItem><NavLink className={activeTab === "3" ? "active" : ""} onClick={() => toggle("3")}>Quản lý người dùng</NavLink></NavItem>
+            <NavItem><NavLink className={activeTab === "4" ? "active" : ""} onClick={() => toggle("4")}>Quản lý xe</NavLink></NavItem>
           </Nav>
           <TabContent activeTab={activeTab}>
             <TabPane tabId="1">
@@ -488,6 +535,60 @@ const AdminPage = () => {
                                 <td>{u.firstName} {u.lastName}</td>
                                 <td>{u.email}</td>
                                 <td><Badge color="primary">{roleEntries.find((r) => r.value === u.role)?.label ?? u.role}</Badge></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      )}
+                    </CardBody>
+                  </Card>
+                </Col>
+              </Row>
+            </TabPane>
+            <TabPane tabId="4">
+              <Row>
+                <Col lg="5" className="mb-3">
+                  <Card className="content-card">
+                    <CardHeader>Tạo xe</CardHeader>
+                    <CardBody>
+                      <Form onSubmit={createVehicle}>
+                        <Row>
+                          <Col md="6"><FormGroup><Label>Biển số</Label><Input value={vehicleForm.licensePlate} onChange={(e) => setVehicleForm({ ...vehicleForm, licensePlate: e.target.value })} required /></FormGroup></Col>
+                          <Col md="6"><FormGroup><Label>Model</Label><Input value={vehicleForm.model} onChange={(e) => setVehicleForm({ ...vehicleForm, model: e.target.value })} /></FormGroup></Col>
+                        </Row>
+                        <Row>
+                          <Col md="4"><FormGroup><Label>Đăng kiểm</Label><Input type="date" value={vehicleForm.registrationExpiry} onChange={(e) => setVehicleForm({ ...vehicleForm, registrationExpiry: e.target.value })} /></FormGroup></Col>
+                          <Col md="4"><FormGroup><Label>GPTL</Label><Input type="date" value={vehicleForm.learnerLicenseExpiry} onChange={(e) => setVehicleForm({ ...vehicleForm, learnerLicenseExpiry: e.target.value })} /></FormGroup></Col>
+                          <Col md="4"><FormGroup><Label>Bảo hiểm</Label><Input type="date" value={vehicleForm.insuranceExpiry} onChange={(e) => setVehicleForm({ ...vehicleForm, insuranceExpiry: e.target.value })} /></FormGroup></Col>
+                        </Row>
+                        <Row>
+                          <Col md="6"><FormGroup><Label>Biên bản thế chấp</Label><Input value={vehicleForm.mortgageInfo} onChange={(e) => setVehicleForm({ ...vehicleForm, mortgageInfo: e.target.value })} /></FormGroup></Col>
+                          <Col md="6"><FormGroup><Label>Chủ quyền xe</Label><Input value={vehicleForm.ownershipInfo} onChange={(e) => setVehicleForm({ ...vehicleForm, ownershipInfo: e.target.value })} /></FormGroup></Col>
+                        </Row>
+                        <FormGroup><Label>ODO hiện tại</Label><Input type="number" value={vehicleForm.currentOdo} onChange={(e) => setVehicleForm({ ...vehicleForm, currentOdo: e.target.value })} /></FormGroup>
+                        <FormGroup check className="mb-3"><Label check><Input type="checkbox" checked={vehicleForm.active} onChange={(e) => setVehicleForm({ ...vehicleForm, active: e.target.checked })} /> Đang hoạt động</Label></FormGroup>
+                        <Button color="primary" type="submit">Tạo xe</Button>
+                      </Form>
+                    </CardBody>
+                  </Card>
+                </Col>
+                <Col lg="7" className="mb-3">
+                  <Card className="content-card">
+                    <CardHeader>Danh sách xe</CardHeader>
+                    <CardBody className="p-0">
+                      {vehicles.length === 0 ? <EmptyState message="Chưa có xe nào" /> : (
+                        <Table responsive hover className="mb-0">
+                          <thead><tr><th>Biển số</th><th>Model</th><th>Đăng kiểm</th><th>GPTL</th><th>Bảo hiểm</th><th>ODO</th><th>Trạng thái</th></tr></thead>
+                          <tbody>
+                            {vehicles.map((vehicle) => (
+                              <tr key={vehicle.id}>
+                                <td><strong>{vehicle.licensePlate}</strong></td>
+                                <td>{vehicle.model || "—"}</td>
+                                <td>{vehicle.registrationExpiry || "—"}</td>
+                                <td>{vehicle.learnerLicenseExpiry || "—"}</td>
+                                <td>{vehicle.insuranceExpiry || "—"}</td>
+                                <td>{vehicle.currentOdo?.toLocaleString("vi-VN") ?? "—"}</td>
+                                <td><Badge color={vehicle.active ? "success" : "secondary"}>{vehicle.active ? "Hoạt động" : "Tắt"}</Badge></td>
                               </tr>
                             ))}
                           </tbody>

@@ -73,6 +73,10 @@ public class DataInitializer {
             upsertConfig("GIA_GIO_SA_HINH_CAM_UNG_THI", "650000", "Giá thêm giờ sa hình cảm ứng thi");
             upsertConfig("THI_LAI_TOT_NGHIEP", "500000", "Phí thi lại tốt nghiệp");
             upsertConfig("THI_LAI_SAT_HACH", "700000", "Phí thi lại sát hạch");
+            upsertConfig("THI_LAI_LY_THUYET", "300000", "Phí thi lại lý thuyết");
+            upsertConfig("THI_LAI_MO_PHONG", "300000", "Phí thi lại mô phỏng");
+            upsertConfig("THI_LAI_SA_HINH", "500000", "Phí thi lại sa hình");
+            upsertConfig("THI_LAI_DUONG_TRUONG", "500000", "Phí thi lại đường trường");
         };
     }
 

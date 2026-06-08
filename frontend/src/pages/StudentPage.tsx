@@ -33,6 +33,7 @@ import {
   rateStudentTeacher,
   registerStudentExtra,
   registerStudentRetake,
+  type ExamRetakePart,
   type StudentExtraType,
   type StudentSessionType,
 } from "../api/student";
@@ -48,6 +49,13 @@ interface StudentProfile {
   closingDate: string;
   settlementDate: string;
   certificateReceivedDate: string;
+  registrationFormSubmitted: boolean;
+  photoSubmitted: boolean;
+  healthCheckSubmitted: boolean;
+  healthCheckSubmittedDate?: string;
+  secondFeePaid: boolean;
+  finalFeePaid: boolean;
+  tuitionReminder: boolean;
   totalFee: number;
   paidFee: number;
   remainingFee: number;
@@ -97,6 +105,7 @@ interface ExamRegistration {
   score?: string;
   retake: boolean;
   retakeFee?: number;
+  retakePart?: string;
   examSession: {
     id: string;
     examType: string;
@@ -142,6 +151,14 @@ const examLabels: Record<string, string> = {
   TOT_NGHIEP: "Thi tốt nghiệp",
   SAT_HACH: "Thi sát hạch",
 };
+const retakePartLabels: Record<ExamRetakePart, string> = {
+  LY_THUYET: "Lý thuyết",
+  MO_PHONG: "Mô phỏng",
+  SA_HINH: "Sa hình",
+  DUONG_TRUONG: "Đường trường",
+  TOT_NGHIEP: "Tốt nghiệp",
+  SAT_HACH: "Sát hạch",
+};
 
 const StudentPage = () => {
   const [activeTab, setActiveTab] = useState("1");
@@ -158,6 +175,7 @@ const StudentPage = () => {
   const [ratingComment, setRatingComment] = useState("");
   const [extraType, setExtraType] = useState<StudentExtraType>("DUONG_TRUONG");
   const [extraHours, setExtraHours] = useState("1");
+  const [retakeParts, setRetakeParts] = useState<Record<string, ExamRetakePart>>({});
   const [message, setMessage] = useState("");
 
   const loadAll = () => {
@@ -219,8 +237,8 @@ const StudentPage = () => {
     loadAll();
   };
 
-  const handleRetake = async (sessionId: string) => {
-    await registerStudentRetake(sessionId);
+  const handleRetake = async (sessionId: string, fallbackPart: ExamRetakePart) => {
+    await registerStudentRetake(sessionId, retakeParts[sessionId] ?? fallbackPart);
     setMessage("Đã đăng ký thi lại");
     loadAll();
   };
@@ -246,9 +264,17 @@ const StudentPage = () => {
                 <Col md="4"><div className="student-summary-item"><div className="text-muted small">Đã đóng</div><div className="fw-semibold">{Number(profile.paidFee).toLocaleString("vi-VN")} đ</div></div></Col>
                 <Col md="4"><div className="student-summary-item"><div className="text-muted small">Còn lại</div><div className="fw-semibold">{Number(profile.remainingFee).toLocaleString("vi-VN")} đ</div></div></Col>
                 <Col md="4"><div className="student-summary-item"><div className="text-muted small">Ngày khai giảng</div><div className="fw-semibold">{profile.openingDate ? new Date(profile.openingDate).toLocaleDateString("vi-VN") : "—"}</div></div></Col>
+                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Khám sức khỏe</div><div className="fw-semibold">{profile.healthCheckSubmitted ? `Đã nộp${profile.healthCheckSubmittedDate ? ` (${new Date(profile.healthCheckSubmittedDate).toLocaleDateString("vi-VN")})` : ""}` : "Chưa nộp"}</div></div></Col>
+                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Hồ sơ</div><div className="fw-semibold">{profile.registrationFormSubmitted && profile.photoSubmitted ? "Đã đủ đơn và ảnh" : "Cần bổ sung"}</div></div></Col>
+                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Nhận bằng</div><div className="fw-semibold">{profile.certificateReceivedDate ? new Date(profile.certificateReceivedDate).toLocaleDateString("vi-VN") : "Chưa có thông tin"}</div></div></Col>
               </Row>
             ) : (
               <EmptyState message="Chưa có thông tin học viên" />
+            )}
+            {profile?.tuitionReminder && (
+              <div className="alert alert-warning mt-3 mb-0">
+                Học phí còn lại: {Number(profile.remainingFee).toLocaleString("vi-VN")} đ. Vui lòng hoàn tất theo lịch thu phí của trung tâm.
+              </div>
             )}
           </CardBody>
         </Card>
@@ -521,7 +547,32 @@ const StudentPage = () => {
                                 <td data-label="Kết quả">{exam.passed == null ? "Chưa có" : exam.passed ? "Đạt" : "Không đạt"}</td>
                                 <td data-label="" className="text-end">
                                   {exam.passed === false && !exam.retake && (
-                                    <Button color="warning" size="sm" onClick={() => handleRetake(exam.examSession.id)}>Thi lại</Button>
+                                    <div className="d-flex gap-2 justify-content-end flex-wrap">
+                                      <Input
+                                        bsSize="sm"
+                                        type="select"
+                                        style={{ maxWidth: 180 }}
+                                        value={retakeParts[exam.examSession.id] ?? (exam.examSession.examType === "TOT_NGHIEP" ? "TOT_NGHIEP" : "LY_THUYET")}
+                                        onChange={(e) => setRetakeParts({ ...retakeParts, [exam.examSession.id]: e.target.value as ExamRetakePart })}
+                                      >
+                                        {(exam.examSession.examType === "TOT_NGHIEP"
+                                          ? ["TOT_NGHIEP"]
+                                          : ["LY_THUYET", "MO_PHONG", "SA_HINH", "DUONG_TRUONG"]
+                                        ).map((part) => (
+                                          <option key={part} value={part}>{retakePartLabels[part as ExamRetakePart]}</option>
+                                        ))}
+                                      </Input>
+                                      <Button
+                                        color="warning"
+                                        size="sm"
+                                        onClick={() => handleRetake(exam.examSession.id, exam.examSession.examType === "TOT_NGHIEP" ? "TOT_NGHIEP" : "LY_THUYET")}
+                                      >
+                                        Thi lại
+                                      </Button>
+                                    </div>
+                                  )}
+                                  {exam.retake && exam.retakeFee && (
+                                    <span>{exam.retakePart ? retakePartLabels[exam.retakePart as ExamRetakePart] : "Thi lại"}: {Number(exam.retakeFee).toLocaleString("vi-VN")} đ</span>
                                   )}
                                 </td>
                               </tr>

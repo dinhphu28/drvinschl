@@ -43,6 +43,11 @@ public class AreaManagerController {
         return areaManagerService.approveMaintenance(id, approved);
     }
 
+    @GetMapping("/maintenance")
+    public List<MaintenanceRecord> getPendingMaintenance() {
+        return areaManagerService.getPendingMaintenanceRequests();
+    }
+
     @PostMapping("/salaries")
     public SalaryRecord calculateSalary(
             @RequestParam Integer teacherId,

@@ -10,4 +10,6 @@ import com.dinhphu28.drvinschl.entity.Vehicle;
 
 public interface MaintenanceRecordRepository extends JpaRepository<MaintenanceRecord, UUID> {
     List<MaintenanceRecord> findByVehicleOrderByMaintenanceDateDesc(Vehicle vehicle);
+
+    List<MaintenanceRecord> findByApprovedFalse();
 }

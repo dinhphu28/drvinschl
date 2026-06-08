@@ -8,6 +8,8 @@ import AppLayout from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
 import StudentPicker from "../components/StudentPicker";
+import StaffPicker from "../components/StaffPicker";
+import VehiclePicker from "../components/VehiclePicker";
 import api from "../api/axios";
 
 const SessionTypes = ["CO_BAN_4H", "CABIN", "DAT", "SA_HINH_THO", "SA_HINH_CAM_UNG"];
@@ -227,10 +229,10 @@ const OpsPage = () => {
                       </Row>
                       <Row>
                         <Col md="6">
-                          <FormGroup><Label>ID giáo viên (tùy chọn)</Label><Input type="number" value={slotForm.teacherId} onChange={(e) => setSlotForm({ ...slotForm, teacherId: e.target.value })} /></FormGroup>
+                          <FormGroup><Label>Giáo viên (tùy chọn)</Label><StaffPicker value={slotForm.teacherId} onChange={(teacherId) => setSlotForm({ ...slotForm, teacherId })} /></FormGroup>
                         </Col>
                         <Col md="6">
-                          <FormGroup><Label>ID xe (UUID, tùy chọn)</Label><Input value={slotForm.vehicleId} onChange={(e) => setSlotForm({ ...slotForm, vehicleId: e.target.value })} /></FormGroup>
+                          <FormGroup><Label>Xe (tùy chọn)</Label><VehiclePicker value={slotForm.vehicleId} onChange={(vehicleId) => setSlotForm({ ...slotForm, vehicleId })} /></FormGroup>
                         </Col>
                       </Row>
                       <FormGroup check>
@@ -288,8 +290,8 @@ const OpsPage = () => {
               <Form onSubmit={handleAssignResources}>
                 <FormGroup><Label>ID buổi học (UUID)</Label><Input value={assignForm.slotId} onChange={(e) => setAssignForm({ ...assignForm, slotId: e.target.value })} required /></FormGroup>
                 <Row>
-                  <Col md="6"><FormGroup><Label>ID giáo viên</Label><Input type="number" value={assignForm.teacherId} onChange={(e) => setAssignForm({ ...assignForm, teacherId: e.target.value })} required /></FormGroup></Col>
-                  <Col md="6"><FormGroup><Label>ID xe (UUID)</Label><Input value={assignForm.vehicleId} onChange={(e) => setAssignForm({ ...assignForm, vehicleId: e.target.value })} required /></FormGroup></Col>
+                  <Col md="6"><FormGroup><Label>Giáo viên</Label><StaffPicker value={assignForm.teacherId} onChange={(teacherId) => setAssignForm({ ...assignForm, teacherId })} required /></FormGroup></Col>
+                  <Col md="6"><FormGroup><Label>Xe</Label><VehiclePicker value={assignForm.vehicleId} onChange={(vehicleId) => setAssignForm({ ...assignForm, vehicleId })} required /></FormGroup></Col>
                 </Row>
                 <Button color="primary">Phân bổ</Button>
               </Form>

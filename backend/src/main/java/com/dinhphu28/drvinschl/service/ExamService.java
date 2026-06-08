@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.dinhphu28.drvinschl.entity.ExamRegistration;
+import com.dinhphu28.drvinschl.entity.ExamPart;
 import com.dinhphu28.drvinschl.entity.ExamSession;
 import com.dinhphu28.drvinschl.entity.ExamType;
 import com.dinhphu28.drvinschl.entity.LearningModule;
@@ -60,17 +61,18 @@ public class ExamService {
     }
 
     @Transactional
-    public ExamRegistration registerRetake(String username, UUID examSessionId) {
+    public ExamRegistration registerRetake(String username, UUID examSessionId, ExamPart part) {
         Student student = userContextService.requireStudent(username);
         ExamSession session = examSessionRepository.findById(examSessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam session not found"));
 
-        BigDecimal retakeFee = getRetakeFee(session.getExamType());
+        BigDecimal retakeFee = getRetakeFee(session.getExamType(), part);
 
         ExamRegistration reg = new ExamRegistration();
         reg.setExamSession(session);
         reg.setStudent(student);
         reg.setRetake(true);
+        reg.setRetakePart(part != null ? part : defaultPart(session.getExamType()));
         reg.setRetakeFee(retakeFee);
         return examRegistrationRepository.save(reg);
     }
@@ -139,17 +141,30 @@ public class ExamService {
         ExamRegistration reg = examRegistrationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Registration not found"));
         reg.setRetake(true);
-        BigDecimal retakeFee = getRetakeFee(reg.getExamSession().getExamType());
+        BigDecimal retakeFee = getRetakeFee(reg.getExamSession().getExamType(), reg.getRetakePart());
         reg.setRetakeFee(retakeFee);
         return examRegistrationRepository.save(reg);
     }
 
-    private BigDecimal getRetakeFee(ExamType type) {
-        String key = type == ExamType.TOT_NGHIEP ? "THI_LAI_TOT_NGHIEP" : "THI_LAI_SAT_HACH";
+    private BigDecimal getRetakeFee(ExamType type, ExamPart part) {
+        String key = switch (part != null ? part : defaultPart(type)) {
+            case LY_THUYET -> "THI_LAI_LY_THUYET";
+            case MO_PHONG -> "THI_LAI_MO_PHONG";
+            case SA_HINH -> "THI_LAI_SA_HINH";
+            case DUONG_TRUONG -> "THI_LAI_DUONG_TRUONG";
+            case TOT_NGHIEP -> "THI_LAI_TOT_NGHIEP";
+            case SAT_HACH -> "THI_LAI_SAT_HACH";
+        };
+        String groupedKey = type == ExamType.TOT_NGHIEP ? "THI_LAI_TOT_NGHIEP" : "THI_LAI_SAT_HACH";
         return systemConfigRepository.findByConfigKey(key)
+                .or(() -> systemConfigRepository.findByConfigKey(groupedKey))
                 .or(() -> systemConfigRepository.findByConfigKey("phi_thi_lai"))
                 .map(c -> new BigDecimal(c.getConfigValue()))
                 .orElse(new BigDecimal("500000"));
+    }
+
+    private ExamPart defaultPart(ExamType type) {
+        return type == ExamType.TOT_NGHIEP ? ExamPart.TOT_NGHIEP : ExamPart.SAT_HACH;
     }
 
     private boolean isEligible(Student student, ExamType type) {

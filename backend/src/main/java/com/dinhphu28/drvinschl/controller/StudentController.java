@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dinhphu28.drvinschl.entity.ExtraRegistration;
+import com.dinhphu28.drvinschl.entity.ExamPart;
 import com.dinhphu28.drvinschl.entity.PaymentRecord;
 import com.dinhphu28.drvinschl.entity.SessionType;
 import com.dinhphu28.drvinschl.entity.TrainingBooking;
@@ -106,8 +107,9 @@ public class StudentController {
     @PostMapping("/exams/{sessionId}/retake")
     public com.dinhphu28.drvinschl.entity.ExamRegistration registerRetake(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable java.util.UUID sessionId) {
-        return examService.registerRetake(userDetails.getUsername(), sessionId);
+            @PathVariable java.util.UUID sessionId,
+            @RequestParam(required = false) ExamPart part) {
+        return examService.registerRetake(userDetails.getUsername(), sessionId, part);
     }
 
     @PreAuthorize("hasRole('HOC_VIEN')")
