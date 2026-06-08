@@ -8,11 +8,11 @@ Hệ thống quản lý trường dạy lái xe theo `REQUIREMENT_SPECIFICATION.
 |---------|-------|
 | `backend/` | Spring Boot API (Java 21, PostgreSQL, JWT) |
 | `frontend/` | Web app cho nhân viên (React + Vite) |
-| `mobile/` | App di động cho học viên (Expo React Native) |
+| `mobile/` | App di động học viên (không bắt buộc cho plan hiện tại) |
 
 ## Vai trò (Actors)
 
-- **HOC_VIEN** — Mobile app only
+- **HOC_VIEN** — Web: hồ sơ, tiến độ, đặt lịch, học phí, thi
 - **KINH_DOANH** — Web: tư vấn, hợp đồng, hồ sơ
 - **KE_TOAN** — Web: thu phí, hoàn phí, xăng, lương
 - **GIAO_VU_KHU_VUC / GIAO_VU_SA_HINH** — Web: phân bổ lịch, xe, GV
@@ -43,7 +43,7 @@ yarn dev
 
 Web: http://localhost:5173
 
-## Chạy Mobile (Học viên)
+## Chạy Mobile (tùy chọn)
 
 ```bash
 cd mobile
@@ -62,7 +62,7 @@ Mật khẩu tất cả: `password123`
 | sales@drvinschl.local | KINH_DOANH |
 | teacher@drvinschl.local | GIAO_VIEN |
 | ops@drvinschl.local | GIAO_VU_KHU_VUC |
-| student@drvinschl.local | HOC_VIEN (mobile) |
+| student@drvinschl.local | HOC_VIEN (web) |
 | director@drvinschl.local | GIAM_DOC |
 
 ## API Modules

@@ -1,5 +1,7 @@
 package com.dinhphu28.drvinschl.service;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 
 import com.dinhphu28.drvinschl.entity.Student;
@@ -25,5 +27,10 @@ public class UserContextService {
         User user = requireUser(username);
         return studentRepository.findByUser(user)
                 .orElseThrow(() -> new IllegalArgumentException("Student profile not found"));
+    }
+
+    public Student requireStudentById(UUID studentId) {
+        return studentRepository.findById(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found"));
     }
 }

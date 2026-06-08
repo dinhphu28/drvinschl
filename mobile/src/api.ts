@@ -37,3 +37,43 @@ export async function getExams() {
   const res = await api.get("/students/exams");
   return res.data;
 }
+
+export async function getAvailableSlots(type: string) {
+  const res = await api.get("/students/slots", { params: { type } });
+  return res.data;
+}
+
+export async function getBookings() {
+  const res = await api.get("/students/bookings");
+  return res.data;
+}
+
+export async function bookSlot(slotId: string) {
+  const res = await api.post("/students/bookings", { slotId });
+  return res.data;
+}
+
+export async function cancelBooking(bookingId: string) {
+  const res = await api.post(`/students/bookings/${bookingId}/cancel`);
+  return res.data;
+}
+
+export async function rateTeacher(bookingId: string, rating: number, comment: string) {
+  const res = await api.post(`/students/bookings/${bookingId}/rate`, { rating, comment });
+  return res.data;
+}
+
+export async function registerExtra(type: "DUONG_TRUONG" | "SA_HINH", hours: number) {
+  const res = await api.post("/students/extra-registration", null, { params: { type, hours } });
+  return res.data;
+}
+
+export async function getExtraRegistrations() {
+  const res = await api.get("/students/extra-registrations");
+  return res.data;
+}
+
+export async function registerRetake(sessionId: string) {
+  const res = await api.post(`/students/exams/${sessionId}/retake`);
+  return res.data;
+}

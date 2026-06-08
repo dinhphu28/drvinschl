@@ -180,3 +180,199 @@
   font-weight: 600;
   border-top: none;
 }
+
+.student-summary-item {
+  height: 100%;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #f8f9fa;
+  min-width: 0;
+}
+
+.student-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.student-tabs .nav-link {
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .app-layout {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .app-sidebar {
+    width: 100%;
+    min-height: auto;
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .app-sidebar-brand {
+    padding: 0.9rem 1rem 0.35rem;
+    border-bottom: none;
+  }
+
+  .app-sidebar-role {
+    padding: 0 1rem 0.55rem;
+  }
+
+  .app-sidebar-nav {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding: 0 1rem 0.75rem;
+  }
+
+  .app-sidebar-link {
+    flex: 0 0 auto;
+    border-left: 0;
+    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .app-sidebar-link.active {
+    border-left: 0;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .app-sidebar-footer {
+    display: none;
+  }
+
+  .app-topbar {
+    padding: 0.85rem 1rem;
+  }
+
+  .app-topbar h1 {
+    font-size: 1.15rem;
+  }
+
+  .app-content {
+    padding: 1rem;
+  }
+
+  .content-card,
+  .content-card .card-header,
+  .content-card .card-body,
+  .student-page .card,
+  .student-page .card-header,
+  .student-page .card-body {
+    border-radius: 8px;
+  }
+
+  .content-card .card-body {
+    padding: 1rem;
+  }
+
+  .student-summary-card .card-header {
+    align-items: flex-start !important;
+  }
+
+  .student-summary-item {
+    padding: 0.85rem;
+  }
+
+  .student-workspace-card > .card-body {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .student-page .btn {
+    min-height: 40px;
+  }
+
+  .student-page .d-flex.flex-wrap.gap-2 .btn {
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+
+  .student-stacked-table.table {
+    margin: 0;
+  }
+
+  .student-stacked-table thead {
+    display: none;
+  }
+
+  .student-stacked-table tbody,
+  .student-stacked-table tr,
+  .student-stacked-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .student-stacked-table tbody {
+    padding: 0.75rem;
+  }
+
+  .student-stacked-table tr {
+    border: 1px solid #e6e9ef;
+    border-radius: 8px;
+    background: #fff;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .student-stacked-table tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .student-stacked-table td {
+    border: 0;
+    padding: 0.35rem 0;
+    text-align: left !important;
+  }
+
+  .student-stacked-table td[data-label]:not([data-label=""]) {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .student-stacked-table td[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    color: #6c757d;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex: 0 0 38%;
+  }
+
+  .student-stacked-table td[data-label=""] {
+    padding-top: 0.65rem;
+  }
+
+  .student-stacked-table td[data-label=""] .btn {
+    width: 100%;
+  }
+
+  .student-page .form-control,
+  .student-page .form-select {
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 420px) {
+  .student-page .d-flex.flex-wrap.gap-2 .btn {
+    flex-basis: 100%;
+  }
+
+  .student-stacked-table td[data-label]:not([data-label=""]) {
+    display: block;
+  }
+
+  .student-stacked-table td[data-label]:not([data-label=""])::before {
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+}

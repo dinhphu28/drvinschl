@@ -10,4 +10,6 @@ import com.dinhphu28.drvinschl.entity.User;
 
 public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, UUID> {
     List<SalaryRecord> findByTeacher(User teacher);
+
+    List<SalaryRecord> findByApprovedByAdminTrueAndApprovedByDirectorFalse();
 }

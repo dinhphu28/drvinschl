@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dinhphu28.drvinschl.entity.ExamRegistration;
 import com.dinhphu28.drvinschl.entity.ExamSession;
 import com.dinhphu28.drvinschl.entity.ExamType;
+import com.dinhphu28.drvinschl.entity.Student;
+import com.dinhphu28.drvinschl.model.BulkRegisterRequest;
 import com.dinhphu28.drvinschl.service.ExamService;
 
 import lombok.RequiredArgsConstructor;
@@ -53,5 +55,37 @@ public class ExamController {
             @RequestParam Boolean passed,
             @RequestParam(required = false) String score) {
         return examService.updateResult(id, passed, score);
+    }
+
+    @PreAuthorize("hasRole('GIAO_VU_THI')")
+    @PutMapping("/{sessionId}/instructions")
+    public ExamSession updateInstructions(
+            @PathVariable UUID sessionId,
+            @RequestParam String instructions) {
+        return examService.updateInstructions(sessionId, instructions);
+    }
+
+    @PreAuthorize("hasRole('GIAO_VU_THI')")
+    @GetMapping("/eligible-students")
+    public List<Student> getEligibleStudents(@RequestParam ExamType type) {
+        return examService.getEligibleStudents(type);
+    }
+
+    @PreAuthorize("hasRole('GIAO_VU_THI')")
+    @PostMapping("/bulk-register")
+    public List<ExamRegistration> bulkRegister(@RequestBody BulkRegisterRequest request) {
+        return examService.bulkRegister(request);
+    }
+
+    @PreAuthorize("hasRole('GIAO_VU_THI')")
+    @GetMapping("/retake-list")
+    public List<Student> getRetakeList(@RequestParam ExamType type) {
+        return examService.getRetakeStudents(type);
+    }
+
+    @PreAuthorize("hasRole('GIAO_VU_THI')")
+    @PutMapping("/registrations/{id}/mark-retake")
+    public ExamRegistration markRetake(@PathVariable UUID id) {
+        return examService.markRetake(id);
     }
 }

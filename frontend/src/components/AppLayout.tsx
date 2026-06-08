@@ -12,6 +12,9 @@ const roleNav: Partial<Record<Role, NavItem[]>> = {
   ADMIN: [
     { label: "Gói học", path: "/admin" },
   ],
+  HOC_VIEN: [
+    { label: "Tổng quan", path: "/student" },
+  ],
   KINH_DOANH: [
     { label: "Học viên", path: "/sales" },
   ],

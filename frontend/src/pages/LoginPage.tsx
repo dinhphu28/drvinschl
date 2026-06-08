@@ -16,9 +16,6 @@ import { useAuth } from "../context/useAuth";
 import { isStaffRole, roleRoutes } from "../utils/roleRoutes";
 import type { UserProfile } from "../types/auth";
 
-const STUDENT_WEB_MESSAGE =
-  "Tài khoản học viên chỉ dùng ứng dụng di động. Vui lòng đăng nhập bằng tài khoản nhân viên.";
-
 const LoginPage: React.FC = () => {
   const { accessToken, setAccessToken, setUser, logout } = useAuth();
   const navigate = useNavigate();
@@ -33,16 +30,16 @@ const LoginPage: React.FC = () => {
     navigate(roleRoutes[profile.role], { replace: true });
   };
 
-  const handleStudentOnWeb = () => {
-    logout();
-    setInfo(STUDENT_WEB_MESSAGE);
+  const redirectStudent = (profile: UserProfile) => {
+    setUser(profile);
+    navigate(roleRoutes[profile.role], { replace: true });
   };
 
   const finishLogin = async (token: string) => {
     setAccessToken(token);
     const profile = await getCurrentUser();
     if (!isStaffRole(profile.data.role)) {
-      handleStudentOnWeb();
+      redirectStudent(profile.data);
       return;
     }
     redirectStaff(profile.data);
@@ -77,7 +74,7 @@ const LoginPage: React.FC = () => {
     getCurrentUser()
       .then((res) => {
         if (!isStaffRole(res.data.role)) {
-          handleStudentOnWeb();
+          redirectStudent(res.data);
           return;
         }
         redirectStaff(res.data);

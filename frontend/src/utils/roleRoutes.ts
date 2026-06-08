@@ -1,7 +1,7 @@
 import type { Role } from "../types/auth";
 
 export const roleRoutes: Record<Role, string> = {
-  HOC_VIEN: "/mobile-only",
+  HOC_VIEN: "/student",
   KINH_DOANH: "/sales",
   KE_TOAN: "/accounting",
   GIAO_VU_KHU_VUC: "/ops",
