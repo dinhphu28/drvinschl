@@ -5,6 +5,7 @@ import {
 import AppLayout from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
+import StaffPicker from "../components/StaffPicker";
 import api from "../api/axios";
 
 /* ── types ── */
@@ -30,6 +31,15 @@ interface Vehicle {
   monthlyStats?: Record<string, unknown>;
 }
 
+interface MaintenanceRequest {
+  id: string;
+  maintenanceDate: string;
+  description?: string;
+  cost?: number;
+  approved: boolean;
+  vehicle?: { licensePlate?: string; model?: string };
+}
+
 interface Salary {
   id: string;
   teacherId: number;
@@ -49,7 +59,7 @@ const TabLeave = () => {
   const handleApprove = (id: string, approved: boolean) => {
     api.put(`/area-manager/leave-requests/${id}?approved=${approved}`).then(() => {
       setLeaves((prev) => prev.map((l) =>
-        l.id === id ? { ...l, status: approved ? "approved" : "rejected" } : l,
+        l.id === id ? { ...l, status: approved ? "APPROVED" : "REJECTED" } : l,
       ));
     });
   };
@@ -83,14 +93,14 @@ const TabLeave = () => {
                   <td>
                     <Button
                       color="success" size="sm" className="me-1"
-                      disabled={l.status !== "pending"}
+                      disabled={l.status !== "PENDING"}
                       onClick={() => handleApprove(l.id, true)}
                     >
                       Duyệt
                     </Button>
                     <Button
                       color="danger" size="sm"
-                      disabled={l.status !== "pending"}
+                      disabled={l.status !== "PENDING"}
                       onClick={() => handleApprove(l.id, false)}
                     >
                       Từ chối
@@ -107,33 +117,53 @@ const TabLeave = () => {
 };
 
 const TabMaintenance = () => {
-  const [maintId, setMaintId] = useState("");
+  const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [msg, setMsg] = useState("");
 
-  const handleSubmit = (approved: boolean) => {
-    if (!maintId.trim()) { setMsg("Vui lòng nhập ID bảo dưỡng"); return; }
-    api.put(`/area-manager/maintenance/${maintId.trim()}?approved=${approved}`)
-      .then(() => { setMsg(`Đã ${approved ? "duyệt" : "từ chối"} yêu cầu bảo dưỡng ${maintId.trim()}`); setMaintId(""); })
+  const loadRequests = () => {
+    api.get<MaintenanceRequest[]>("/area-manager/maintenance")
+      .then((res) => setRequests(res.data))
+      .catch(() => setRequests([]));
+  };
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  const handleSubmit = (id: string, approved: boolean) => {
+    api.put(`/area-manager/maintenance/${id}?approved=${approved}`)
+      .then(() => {
+        setMsg(`Đã ${approved ? "duyệt" : "từ chối"} yêu cầu bảo dưỡng`);
+        setRequests((prev) => prev.filter((item) => item.id !== id));
+      })
       .catch(() => { setMsg("Lỗi khi xử lý yêu cầu bảo dưỡng"); });
   };
 
   return (
     <Card className="content-card">
       <CardHeader>Yêu cầu bảo dưỡng phương tiện</CardHeader>
-      <CardBody>
-        <div className="mb-3">
-          <Label htmlFor="maintId">ID yêu cầu bảo dưỡng (UUID)</Label>
-          <Input
-            id="maintId" type="text"
-            placeholder="Nhập ID yêu cầu bảo dưỡng..."
-            value={maintId}
-            onChange={(e) => setMaintId(e.target.value)}
-          />
-        </div>
-        <div>
-          <Button color="success" className="me-2" onClick={() => handleSubmit(true)}>Duyệt</Button>
-          <Button color="danger" onClick={() => handleSubmit(false)}>Từ chối</Button>
-        </div>
+      <CardBody className="p-0">
+        {requests.length === 0 ? (
+          <EmptyState message="Không có yêu cầu bảo dưỡng đang chờ" />
+        ) : (
+          <Table responsive hover className="mb-0">
+            <thead><tr><th>Xe</th><th>Ngày</th><th>Nội dung</th><th>Chi phí</th><th></th></tr></thead>
+            <tbody>
+              {requests.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.vehicle?.licensePlate || "—"}</td>
+                  <td>{item.maintenanceDate}</td>
+                  <td>{item.description || "—"}</td>
+                  <td>{item.cost ? Number(item.cost).toLocaleString("vi-VN") : "—"} đ</td>
+                  <td>
+                    <Button color="success" size="sm" className="me-2" onClick={() => handleSubmit(item.id, true)}>Duyệt</Button>
+                    <Button color="danger" size="sm" onClick={() => handleSubmit(item.id, false)}>Từ chối</Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
         {msg && <div className="alert alert-info mt-3" role="alert">{msg}</div>}
       </CardBody>
     </Card>
@@ -173,8 +203,8 @@ const TabSalary = () => {
         <Row>
           <Col md="3">
             <FormGroup>
-              <Label>Giáo viên ID</Label>
-              <Input type="number" value={teacherId} onChange={(e) => setTeacherId(e.target.value)} placeholder="Nhập ID" />
+              <Label>Giáo viên</Label>
+              <StaffPicker value={teacherId} onChange={(id) => setTeacherId(id)} required />
             </FormGroup>
           </Col>
           <Col md="3">

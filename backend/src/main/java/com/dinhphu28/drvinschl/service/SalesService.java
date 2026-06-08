@@ -1,6 +1,7 @@
 package com.dinhphu28.drvinschl.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,6 +71,17 @@ public class SalesService {
         contract.setHealthCheckComplete(healthCheck);
         contract.setFeeComplete(fee);
         contractRepository.save(contract);
+        student.setRegistrationFormSubmitted(registrationForm);
+        student.setPhotoSubmitted(photo);
+        student.setHealthCheckSubmitted(healthCheck);
+        if (healthCheck && student.getHealthCheckSubmittedDate() == null) {
+            student.setHealthCheckSubmittedDate(LocalDate.now());
+        }
+        if (!healthCheck) {
+            student.setHealthCheckSubmittedDate(null);
+        }
+        student.setSecondFeePaid(fee);
+        studentRepository.save(student);
         return student;
     }
 }

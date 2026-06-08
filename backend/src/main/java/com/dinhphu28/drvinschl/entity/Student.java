@@ -51,6 +51,24 @@ public class Student extends AbstractAuditableEntity {
     @Column(name = "certificate_received_date")
     private LocalDate certificateReceivedDate;
 
+    @Column(name = "registration_form_submitted")
+    private boolean registrationFormSubmitted;
+
+    @Column(name = "photo_submitted")
+    private boolean photoSubmitted;
+
+    @Column(name = "health_check_submitted")
+    private boolean healthCheckSubmitted;
+
+    @Column(name = "health_check_submitted_date")
+    private LocalDate healthCheckSubmittedDate;
+
+    @Column(name = "second_fee_paid")
+    private boolean secondFeePaid;
+
+    @Column(name = "final_fee_paid")
+    private boolean finalFeePaid;
+
     @Column(name = "total_fee")
     private BigDecimal totalFee;
 

@@ -10,26 +10,34 @@ const statLabels: Record<string, string> = {
   passRate: "Tỷ lệ thi đạt", completionRate: "Tỷ lệ hoàn thành",
 };
 
-interface ExamStat {
-  examType: string; total: number; passed: number; failed: number; passRate: number;
+interface ExamStatsResponse {
+  passRateByType: Record<string, number>;
+  totalExamsByMonth: Record<string, number>;
 }
-interface CompletionStat {
-  month: string; year: number; completed: number; rate: number;
+interface CompletionStatsResponse {
+  totalCompletedByMonth: Record<string, number>;
+  completionRate: number;
 }
 interface SalaryRecord {
-  id: string; teacherName: string; month: string; year: number;
-  baseSalary: number; bonus: number; total: number;
-  adminApproved: boolean; directorApproved: boolean;
+  id: string;
+  teacher?: { firstName?: string; lastName?: string; username?: string };
+  month: string;
+  baseSalary: number;
+  bonus: number;
+  totalAmount: number;
+  approvedByAdmin: boolean;
+  approvedByDirector: boolean;
 }
 const examTypeLabels: Record<string, string> = {
+  TOT_NGHIEP: "Thi tốt nghiệp", SAT_HACH: "Thi sát hạch",
   LY_THUYET: "Lý thuyết", MO_PHONG: "Mô phỏng", SA_HINH: "Sa hình", DUONG_TRUONG: "Đường trường",
 };
 const DirectorPage = () => {
   const [activeTab, setActiveTab] = useState("1");
   const [message, setMessage] = useState("");
   const [overview, setOverview] = useState<Record<string, number>>({});
-  const [examStats, setExamStats] = useState<ExamStat[]>([]);
-  const [completionStats, setCompletionStats] = useState<CompletionStat[]>([]);
+  const [examStats, setExamStats] = useState<ExamStatsResponse | null>(null);
+  const [completionStats, setCompletionStats] = useState<CompletionStatsResponse | null>(null);
   const [salaries, setSalaries] = useState<SalaryRecord[]>([]);
 
   const flash = (m: string) => { setMessage(m); setTimeout(() => setMessage(""), 3000); };
@@ -38,10 +46,10 @@ const DirectorPage = () => {
     api.get<Record<string, number>>("/director/overview").then((res) => setOverview(res.data));
   }, []);
   useEffect(() => {
-    api.get<ExamStat[]>("/director/exam-stats").then((res) => setExamStats(res.data)).catch(() => {});
+    api.get<ExamStatsResponse>("/director/exam-stats").then((res) => setExamStats(res.data)).catch(() => {});
   }, []);
   useEffect(() => {
-    api.get<CompletionStat[]>("/director/completion-stats").then((res) => setCompletionStats(res.data)).catch(() => {});
+    api.get<CompletionStatsResponse>("/director/completion-stats").then((res) => setCompletionStats(res.data)).catch(() => {});
   }, []);
   useEffect(() => {
     loadSalaries();
@@ -83,22 +91,19 @@ const DirectorPage = () => {
               <Card className="content-card">
                 <CardHeader>Thống kê thi sát hạch</CardHeader>
                 <CardBody className="p-0">
-                  {!examStats.length ? <div className="p-4 text-muted">Chưa có dữ liệu</div> : (
+                  {!examStats || Object.keys(examStats.passRateByType).length === 0 ? <div className="p-4 text-muted">Chưa có dữ liệu</div> : (
                     <Table responsive hover className="mb-0">
                       <thead>
-                        <tr><th>Loại thi</th><th>Tổng số</th><th>Đạt</th><th>Không đạt</th><th>Tỷ lệ đạt</th></tr>
+                        <tr><th>Loại thi</th><th>Tỷ lệ đạt</th></tr>
                       </thead>
                       <tbody>
-                        {examStats.map((s) => (
-                          <tr key={s.examType}>
-                            <td><strong>{examTypeLabels[s.examType] ?? s.examType}</strong></td>
-                            <td>{s.total}</td>
-                            <td><Badge color="success">{s.passed}</Badge></td>
-                            <td><Badge color="danger">{s.failed}</Badge></td>
+                        {Object.entries(examStats.passRateByType).map(([examType, passRate]) => (
+                          <tr key={examType}>
+                            <td><strong>{examTypeLabels[examType] ?? examType}</strong></td>
                             <td>
-                              <span className={s.passRate >= 50 ? "text-success" : "text-danger"}><strong>{s.passRate.toFixed(1)}%</strong></span>
+                              <span className={passRate >= 50 ? "text-success" : "text-danger"}><strong>{Number(passRate).toFixed(1)}%</strong></span>
                               <div className="progress mt-1" style={{ height: "6px" }}>
-                                <div className="progress-bar bg-success" style={{ width: `${s.passRate}%` }} />
+                                <div className="progress-bar bg-success" style={{ width: `${passRate}%` }} />
                               </div>
                             </td>
                           </tr>
@@ -113,20 +118,20 @@ const DirectorPage = () => {
               <Card className="content-card">
                 <CardHeader>Thống kê hoàn thành khóa theo tháng</CardHeader>
                 <CardBody className="p-0">
-                  {!completionStats.length ? <div className="p-4 text-muted">Chưa có dữ liệu</div> : (
+                  {!completionStats ? <div className="p-4 text-muted">Chưa có dữ liệu</div> : (
                     <Table responsive hover className="mb-0">
                       <thead>
                         <tr><th>Tháng</th><th>Số hoàn thành</th><th>Tỷ lệ hoàn thành</th></tr>
                       </thead>
                       <tbody>
-                        {completionStats.map((s, i) => (
-                          <tr key={i}>
-                            <td>{s.month}/{s.year}</td>
-                            <td><strong>{s.completed}</strong></td>
+                        {Object.entries(completionStats.totalCompletedByMonth).map(([month, completed]) => (
+                          <tr key={month}>
+                            <td>{month}</td>
+                            <td><strong>{completed}</strong></td>
                             <td>
-                              <span className={s.rate >= 50 ? "text-success" : "text-warning"}><strong>{s.rate.toFixed(1)}%</strong></span>
+                              <span className={completionStats.completionRate >= 50 ? "text-success" : "text-warning"}><strong>{Number(completionStats.completionRate).toFixed(1)}%</strong></span>
                               <div className="progress mt-1" style={{ height: "6px" }}>
-                                <div className={`progress-bar ${s.rate >= 50 ? "bg-success" : "bg-warning"}`} style={{ width: `${Math.min(s.rate, 100)}%` }} />
+                                <div className={`progress-bar ${completionStats.completionRate >= 50 ? "bg-success" : "bg-warning"}`} style={{ width: `${Math.min(completionStats.completionRate, 100)}%` }} />
                               </div>
                             </td>
                           </tr>
@@ -148,15 +153,15 @@ const DirectorPage = () => {
                       </thead>
                       <tbody>
                         {salaries.map((s) => (
-                          <tr key={s.id} className={s.directorApproved ? "table-success" : ""}>
-                            <td><strong>{s.teacherName}</strong></td>
-                            <td>{s.month}/{s.year}</td>
+                          <tr key={s.id} className={s.approvedByDirector ? "table-success" : ""}>
+                            <td><strong>{`${s.teacher?.firstName ?? ""} ${s.teacher?.lastName ?? ""}`.trim() || s.teacher?.username || "—"}</strong></td>
+                            <td>{s.month}</td>
                             <td>{Number(s.baseSalary).toLocaleString()} đ</td>
                             <td>{Number(s.bonus).toLocaleString()} đ</td>
-                            <td><strong>{Number(s.total).toLocaleString()} đ</strong></td>
-                            <td><Badge color={s.adminApproved ? "success" : "warning"}>{s.adminApproved ? "Đã duyệt" : "Chờ duyệt"}</Badge></td>
+                            <td><strong>{Number(s.totalAmount).toLocaleString()} đ</strong></td>
+                            <td><Badge color={s.approvedByAdmin ? "success" : "warning"}>{s.approvedByAdmin ? "Đã duyệt" : "Chờ duyệt"}</Badge></td>
                             <td>
-                              {s.directorApproved
+                              {s.approvedByDirector
                                 ? <Badge color="success">Giám đốc đã duyệt</Badge>
                                 : <Button color="success" size="sm" onClick={() => approveSalary(s.id)}>Duyệt</Button>
                               }

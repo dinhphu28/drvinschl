@@ -12,9 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.dinhphu28.drvinschl.entity.FuelRecord;
+import com.dinhphu28.drvinschl.entity.LearningModule;
+import com.dinhphu28.drvinschl.entity.LearningProgress;
 import com.dinhphu28.drvinschl.entity.LeaveRequest;
 import com.dinhphu28.drvinschl.entity.LeaveStatus;
 import com.dinhphu28.drvinschl.entity.MaintenanceRecord;
+import com.dinhphu28.drvinschl.entity.ProgressStatus;
 import com.dinhphu28.drvinschl.entity.SessionReport;
 import com.dinhphu28.drvinschl.entity.SessionType;
 import com.dinhphu28.drvinschl.entity.TrainingBooking;
@@ -23,6 +26,7 @@ import com.dinhphu28.drvinschl.entity.Vehicle;
 import com.dinhphu28.drvinschl.entity.VehicleLog;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
 import com.dinhphu28.drvinschl.repository.FuelRecordRepository;
+import com.dinhphu28.drvinschl.repository.LearningProgressRepository;
 import com.dinhphu28.drvinschl.repository.LeaveRequestRepository;
 import com.dinhphu28.drvinschl.repository.MaintenanceRecordRepository;
 import com.dinhphu28.drvinschl.repository.SessionReportRepository;
@@ -43,6 +47,7 @@ public class TeacherService {
     private final VehicleRepository vehicleRepository;
     private final MaintenanceRecordRepository maintenanceRecordRepository;
     private final UserContextService userContextService;
+    private final LearningProgressRepository learningProgressRepository;
 
     public List<TrainingBooking> getSchedule(String username) {
         User teacher = userContextService.requireUser(username);
@@ -65,7 +70,56 @@ public class TeacherService {
         report.setDurationMinutes(durationMinutes);
         report.setDatScreenshotUrl(datScreenshot);
         report.setAttendanceMarked(true);
-        return sessionReportRepository.save(report);
+        SessionReport saved = sessionReportRepository.save(report);
+        updateLearningProgress(booking, type, km, durationMinutes);
+        return saved;
+    }
+
+    private void updateLearningProgress(TrainingBooking booking, SessionType type, Integer km, Integer durationMinutes) {
+        LearningModule module = switch (type) {
+            case CO_BAN_4H -> LearningModule.CO_BAN_4H;
+            case CABIN -> LearningModule.CABIN;
+            case DAT -> LearningModule.DAT;
+            case SA_HINH_THO -> LearningModule.SA_HINH_THO;
+            case SA_HINH_CAM_UNG -> LearningModule.SA_HINH_CAM_UNG;
+        };
+        LearningProgress progress = learningProgressRepository.findByStudentAndModule(booking.getStudent(), module)
+                .orElseGet(() -> {
+                    LearningProgress p = new LearningProgress();
+                    p.setStudent(booking.getStudent());
+                    p.setModule(module);
+                    p.setStatus(ProgressStatus.NOT_STARTED);
+                    p.setCompletedHours(0);
+                    p.setRequiredHours(0);
+                    p.setTotalKm(0);
+                    p.setRemainingKm(0);
+                    p.setTotalMinutes(0);
+                    return p;
+                });
+
+        int oldTotalKm = progress.getTotalKm() != null ? progress.getTotalKm() : 0;
+        int oldRemainingKm = progress.getRemainingKm() != null ? progress.getRemainingKm() : 0;
+        int requiredKm = oldTotalKm + oldRemainingKm;
+        int minutes = durationMinutes != null ? durationMinutes : 0;
+        int addedHours = minutes / 60;
+        int completedHours = progress.getCompletedHours() != null ? progress.getCompletedHours() : 0;
+        int completedKm = oldTotalKm + (km != null ? km : 0);
+
+        progress.setCompletedHours(completedHours + addedHours);
+        progress.setTotalMinutes((progress.getTotalMinutes() != null ? progress.getTotalMinutes() : 0) + minutes);
+        progress.setTotalKm(completedKm);
+        if (requiredKm > 0) {
+            progress.setRemainingKm(Math.max(0, requiredKm - completedKm));
+        }
+
+        int requiredHours = progress.getRequiredHours() != null ? progress.getRequiredHours() : 0;
+        if ((requiredHours > 0 && progress.getCompletedHours() >= requiredHours)
+                || (requiredKm > 0 && progress.getRemainingKm() != null && progress.getRemainingKm() == 0)) {
+            progress.setStatus(ProgressStatus.COMPLETED);
+        } else if (progress.getCompletedHours() > 0 || completedKm > 0) {
+            progress.setStatus(ProgressStatus.IN_PROGRESS);
+        }
+        learningProgressRepository.save(progress);
     }
 
     @Transactional

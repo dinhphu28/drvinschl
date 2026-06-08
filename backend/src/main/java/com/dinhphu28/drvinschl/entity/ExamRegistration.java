@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -35,4 +37,8 @@ public class ExamRegistration extends AbstractAuditableEntity {
 
     @Column(name = "retake_fee")
     private BigDecimal retakeFee;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "retake_part")
+    private ExamPart retakePart;
 }

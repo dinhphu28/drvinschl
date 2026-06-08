@@ -120,9 +120,12 @@ const AccountingPage = () => {
   const loadFuelRecords = async () => {
     setFuelLoading(true);
     try {
+      const today = new Date();
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
       const params = new URLSearchParams();
-      if (fuelDateRange.start) params.append("start", fuelDateRange.start);
-      if (fuelDateRange.end) params.append("end", fuelDateRange.end);
+      params.append("start", fuelDateRange.start || monthStart);
+      params.append("end", fuelDateRange.end || monthEnd);
       const res = await api.get<FuelRecord[]>(`/accounting/fuel?${params.toString()}`);
       setFuelRecords(res.data);
     } catch {

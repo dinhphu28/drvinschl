@@ -2,6 +2,7 @@ package com.dinhphu28.drvinschl.service;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.LocalDate;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,10 @@ public class OpsService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
         student.setCourseStatus(CourseStatus.HOAN_THANH);
+        student.setClosingDate(LocalDate.now());
+        if (student.getSettlementDate() == null) {
+            student.setSettlementDate(LocalDate.now());
+        }
         return studentRepository.save(student);
     }
 }

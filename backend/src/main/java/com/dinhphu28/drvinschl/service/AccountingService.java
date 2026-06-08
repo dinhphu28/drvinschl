@@ -13,15 +13,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.dinhphu28.drvinschl.entity.CourseStatus;
 import com.dinhphu28.drvinschl.entity.FuelRecord;
+import com.dinhphu28.drvinschl.entity.CoursePackage;
+import com.dinhphu28.drvinschl.entity.LearningModule;
+import com.dinhphu28.drvinschl.entity.LearningProgress;
 import com.dinhphu28.drvinschl.entity.PaymentRecord;
 import com.dinhphu28.drvinschl.entity.PaymentType;
+import com.dinhphu28.drvinschl.entity.ProgressStatus;
 import com.dinhphu28.drvinschl.entity.Role;
 import com.dinhphu28.drvinschl.entity.SalaryRecord;
 import com.dinhphu28.drvinschl.entity.Student;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.model.CreateStudentAccountRequest;
 import com.dinhphu28.drvinschl.model.PaymentRequest;
+import com.dinhphu28.drvinschl.repository.CoursePackageRepository;
 import com.dinhphu28.drvinschl.repository.FuelRecordRepository;
+import com.dinhphu28.drvinschl.repository.LearningProgressRepository;
 import com.dinhphu28.drvinschl.repository.PaymentRecordRepository;
 import com.dinhphu28.drvinschl.repository.SalaryRecordRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
@@ -39,6 +45,8 @@ public class AccountingService {
     private final SalaryRecordRepository salaryRecordRepository;
     private final UserContextService userContextService;
     private final PasswordEncoder passwordEncoder;
+    private final CoursePackageRepository coursePackageRepository;
+    private final LearningProgressRepository learningProgressRepository;
 
     @Transactional
     public Student createStudentAccount(CreateStudentAccountRequest request) {
@@ -66,7 +74,40 @@ public class AccountingService {
         student.setPaidFee(BigDecimal.ZERO);
         student.setApplicationDate(LocalDate.now());
         student.setCourseStatus(CourseStatus.DANG_KY);
-        return studentRepository.save(student);
+        Student saved = studentRepository.save(student);
+        initLearningProgress(saved);
+        return saved;
+    }
+
+    private void initLearningProgress(Student student) {
+        CoursePackage pkg = coursePackageRepository.findByName(student.getCoursePackage()).orElse(null);
+        createProgress(student, LearningModule.LY_THUYET, pkg != null ? pkg.getTheoryHours() : 0, 0);
+        createProgress(student, LearningModule.MO_PHONG, pkg != null ? pkg.getSimulationHours() : 0, 0);
+        createProgress(student, LearningModule.CO_BAN_4H, pkg != null ? pkg.getBasic4hHours() : 0, 0);
+        createProgress(student, LearningModule.CABIN, pkg != null ? pkg.getCabinHours() : 0, 0);
+        createProgress(student, LearningModule.DAT, pkg != null ? pkg.getDatHours() : 0, pkg != null ? pkg.getDatKm() : 0);
+        createProgress(student, LearningModule.SA_HINH_THO, pkg != null ? pkg.getRawYardHours() : 0, 0);
+        int sensorHours = pkg != null
+                ? (pkg.getSensorPracticeHours() != null ? pkg.getSensorPracticeHours() : 0)
+                    + (pkg.getSensorExamHours() != null ? pkg.getSensorExamHours() : 0)
+                : 0;
+        createProgress(student, LearningModule.SA_HINH_CAM_UNG, sensorHours, 0);
+    }
+
+    private void createProgress(Student student, LearningModule module, Integer requiredHours, Integer requiredKm) {
+        if (learningProgressRepository.findByStudentAndModule(student, module).isPresent()) {
+            return;
+        }
+        LearningProgress progress = new LearningProgress();
+        progress.setStudent(student);
+        progress.setModule(module);
+        progress.setStatus(ProgressStatus.NOT_STARTED);
+        progress.setCompletedHours(0);
+        progress.setRequiredHours(requiredHours != null ? requiredHours : 0);
+        progress.setTotalKm(0);
+        progress.setRemainingKm(requiredKm != null ? requiredKm : 0);
+        progress.setTotalMinutes(0);
+        learningProgressRepository.save(progress);
     }
 
     private String resolveStudentUsername(String requestedUsername, String fullName) {
@@ -112,9 +153,15 @@ public class AccountingService {
 
         BigDecimal paid = student.getPaidFee() != null ? student.getPaidFee() : BigDecimal.ZERO;
         if (request.paymentType() == PaymentType.HOC_PHI || request.paymentType() == PaymentType.HOC_THEM) {
-            student.setPaidFee(paid.add(request.amount()));
+            BigDecimal newPaid = paid.add(request.amount());
+            student.setPaidFee(newPaid);
+            BigDecimal total = student.getTotalFee() != null ? student.getTotalFee() : BigDecimal.ZERO;
+            if (total.compareTo(BigDecimal.ZERO) > 0 && newPaid.compareTo(total) >= 0) {
+                student.setFinalFeePaid(true);
+            }
         } else if (request.paymentType() == PaymentType.HOAN_PHI) {
             student.setPaidFee(paid.subtract(request.amount()));
+            student.setFinalFeePaid(false);
         }
         studentRepository.save(student);
 

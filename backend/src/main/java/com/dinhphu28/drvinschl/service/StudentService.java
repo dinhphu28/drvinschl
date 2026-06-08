@@ -86,7 +86,35 @@ public class StudentService {
         reg.setExtraType(type);
         reg.setHours(requestedHours);
         reg.setFee(resolvedFee);
-        return extraRegistrationRepository.save(reg);
+        ExtraRegistration saved = extraRegistrationRepository.save(reg);
+        addExtraHoursToProgress(student, type, requestedHours);
+        return saved;
+    }
+
+    private void addExtraHoursToProgress(Student student, ExtraRegistration.ExtraType type, Integer hours) {
+        LearningModule module = switch (type) {
+            case DUONG_TRUONG -> LearningModule.DAT;
+            case SA_HINH, SA_HINH_THO -> LearningModule.SA_HINH_THO;
+            case SA_HINH_CAM_UNG_TAP, SA_HINH_CAM_UNG_THI -> LearningModule.SA_HINH_CAM_UNG;
+        };
+        LearningProgress progress = learningProgressRepository.findByStudentAndModule(student, module)
+                .orElseGet(() -> {
+                    LearningProgress p = new LearningProgress();
+                    p.setStudent(student);
+                    p.setModule(module);
+                    p.setStatus(ProgressStatus.NOT_STARTED);
+                    p.setCompletedHours(0);
+                    p.setRequiredHours(0);
+                    p.setTotalKm(0);
+                    p.setRemainingKm(0);
+                    p.setTotalMinutes(0);
+                    return p;
+                });
+        progress.setRequiredHours((progress.getRequiredHours() != null ? progress.getRequiredHours() : 0) + hours);
+        if (progress.getStatus() == null) {
+            progress.setStatus(ProgressStatus.NOT_STARTED);
+        }
+        learningProgressRepository.save(progress);
     }
 
     private BigDecimal getExtraHourPrice(ExtraRegistration.ExtraType type) {
@@ -144,6 +172,13 @@ public class StudentService {
                 student.getClosingDate(),
                 student.getSettlementDate(),
                 student.getCertificateReceivedDate(),
+                student.isRegistrationFormSubmitted(),
+                student.isPhotoSubmitted(),
+                student.isHealthCheckSubmitted(),
+                student.getHealthCheckSubmittedDate(),
+                student.isSecondFeePaid(),
+                student.isFinalFeePaid(),
+                total.subtract(paid).compareTo(BigDecimal.ZERO) > 0,
                 total,
                 paid,
                 total.subtract(paid),

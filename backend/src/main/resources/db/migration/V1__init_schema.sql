@@ -46,6 +46,12 @@ CREATE TABLE IF NOT EXISTS tbl_student (
     closing_date DATE,
     settlement_date DATE,
     certificate_received_date DATE,
+    registration_form_submitted BOOLEAN DEFAULT FALSE,
+    photo_submitted BOOLEAN DEFAULT FALSE,
+    health_check_submitted BOOLEAN DEFAULT FALSE,
+    health_check_submitted_date DATE,
+    second_fee_paid BOOLEAN DEFAULT FALSE,
+    final_fee_paid BOOLEAN DEFAULT FALSE,
     total_fee DECIMAL(15,2),
     paid_fee DECIMAL(15,2),
     course_status VARCHAR(50),
@@ -199,7 +205,8 @@ CREATE TABLE IF NOT EXISTS tbl_exam_registration (
     passed BOOLEAN,
     score VARCHAR(50),
     is_retake BOOLEAN DEFAULT FALSE,
-    retake_fee DECIMAL(15,2)
+    retake_fee DECIMAL(15,2),
+    retake_part VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS tbl_contract (
