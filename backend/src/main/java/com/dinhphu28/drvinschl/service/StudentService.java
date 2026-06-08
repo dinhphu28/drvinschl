@@ -108,6 +108,11 @@ public class StudentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
     }
 
+    public List<ExtraRegistration> getExtraRegistrations(String username) {
+        Student student = userContextService.requireStudent(username);
+        return extraRegistrationRepository.findByStudent(student);
+    }
+
     private StudentProfileResponse toProfileResponse(Student student) {
         BigDecimal total = student.getTotalFee() != null ? student.getTotalFee() : BigDecimal.ZERO;
         BigDecimal paid = student.getPaidFee() != null ? student.getPaidFee() : BigDecimal.ZERO;

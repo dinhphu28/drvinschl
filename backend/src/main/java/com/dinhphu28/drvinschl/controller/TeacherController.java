@@ -1,8 +1,10 @@
 package com.dinhphu28.drvinschl.controller;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dinhphu28.drvinschl.entity.FuelRecord;
 import com.dinhphu28.drvinschl.entity.LeaveRequest;
+import com.dinhphu28.drvinschl.entity.MaintenanceRecord;
 import com.dinhphu28.drvinschl.entity.SessionReport;
 import com.dinhphu28.drvinschl.entity.SessionType;
 import com.dinhphu28.drvinschl.entity.TrainingBooking;
@@ -79,5 +82,37 @@ public class TeacherController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
             @RequestParam String reason) {
         return teacherService.requestLeave(userDetails.getUsername(), start, end, reason);
+    }
+
+    @PostMapping("/vehicles/{vehicleId}/departure")
+    public VehicleLog recordDeparture(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID vehicleId,
+            @RequestParam Integer odoDeparture,
+            @RequestParam boolean isClean,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime departureTime) {
+        return teacherService.recordVehicleDeparture(
+                userDetails.getUsername(), vehicleId, odoDeparture, isClean, departureTime);
+    }
+
+    @PostMapping("/vehicles/{vehicleId}/maintenance-request")
+    public MaintenanceRecord submitMaintenanceRequest(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID vehicleId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate maintenanceDate,
+            @RequestParam String description,
+            @RequestParam(required = false) BigDecimal cost) {
+        return teacherService.submitMaintenanceRequest(
+                userDetails.getUsername(), vehicleId, maintenanceDate, description, cost);
+    }
+
+    @GetMapping("/dashboard-stats")
+    public Map<String, Object> getDashboardStats(@AuthenticationPrincipal UserDetails userDetails) {
+        return teacherService.getDashboardStats(userDetails.getUsername());
+    }
+
+    @GetMapping("/vehicle-info/{vehicleId}")
+    public Map<String, Object> getVehicleInfo(@PathVariable UUID vehicleId) {
+        return teacherService.getVehicleInfo(vehicleId);
     }
 }

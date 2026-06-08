@@ -1,7 +1,10 @@
 package com.dinhphu28.drvinschl.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -10,10 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 import com.dinhphu28.drvinschl.entity.ExamRegistration;
 import com.dinhphu28.drvinschl.entity.ExamSession;
 import com.dinhphu28.drvinschl.entity.ExamType;
+import com.dinhphu28.drvinschl.entity.LearningModule;
+import com.dinhphu28.drvinschl.entity.LearningProgress;
+import com.dinhphu28.drvinschl.entity.ProgressStatus;
 import com.dinhphu28.drvinschl.entity.Student;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
+import com.dinhphu28.drvinschl.model.BulkRegisterRequest;
 import com.dinhphu28.drvinschl.repository.ExamRegistrationRepository;
 import com.dinhphu28.drvinschl.repository.ExamSessionRepository;
+import com.dinhphu28.drvinschl.repository.LearningProgressRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
 import com.dinhphu28.drvinschl.repository.SystemConfigRepository;
 
@@ -26,6 +34,7 @@ public class ExamService {
     private final ExamRegistrationRepository examRegistrationRepository;
     private final SystemConfigRepository systemConfigRepository;
     private final StudentRepository studentRepository;
+    private final LearningProgressRepository learningProgressRepository;
     private final UserContextService userContextService;
 
     public List<ExamSession> getExamSessions(ExamType type) {
@@ -80,5 +89,92 @@ public class ExamService {
         reg.setPassed(passed);
         reg.setScore(score);
         return examRegistrationRepository.save(reg);
+    }
+
+    @Transactional
+    public ExamSession updateInstructions(UUID sessionId, String instructions) {
+        ExamSession session = examSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam session not found"));
+        session.setInstructions(instructions);
+        return examSessionRepository.save(session);
+    }
+
+    public List<Student> getEligibleStudents(ExamType type) {
+        List<Student> allStudents = studentRepository.findAll();
+        return allStudents.stream()
+                .filter(s -> isEligible(s, type))
+                .toList();
+    }
+
+    @Transactional
+    public List<ExamRegistration> bulkRegister(BulkRegisterRequest request) {
+        ExamSession session = examSessionRepository.findById(request.examSessionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Exam session not found"));
+
+        List<ExamRegistration> registrations = new ArrayList<>();
+        for (UUID studentId : request.studentIds()) {
+            Student student = studentRepository.findById(studentId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Student not found with id: " + studentId));
+
+            ExamRegistration reg = new ExamRegistration();
+            reg.setExamSession(session);
+            reg.setStudent(student);
+            registrations.add(reg);
+        }
+        return examRegistrationRepository.saveAll(registrations);
+    }
+
+    public List<Student> getRetakeStudents(ExamType type) {
+        List<ExamSession> sessions = examSessionRepository.findByExamType(type);
+        Set<UUID> studentIds = new HashSet<>();
+        for (ExamSession session : sessions) {
+            List<ExamRegistration> failed = examRegistrationRepository
+                    .findByExamSessionAndPassedFalseAndRetakeFalse(session);
+            failed.forEach(r -> studentIds.add(r.getStudent().getId()));
+        }
+        return studentRepository.findAllById(studentIds);
+    }
+
+    @Transactional
+    public ExamRegistration markRetake(UUID id) {
+        ExamRegistration reg = examRegistrationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Registration not found"));
+        reg.setRetake(true);
+        BigDecimal retakeFee = systemConfigRepository.findByConfigKey("phi_thi_lai")
+                .map(c -> new BigDecimal(c.getConfigValue()))
+                .orElse(new BigDecimal("500000"));
+        reg.setRetakeFee(retakeFee);
+        return examRegistrationRepository.save(reg);
+    }
+
+    private boolean isEligible(Student student, ExamType type) {
+        List<LearningProgress> progressList = learningProgressRepository.findByStudent(student);
+        LearningModule[] requiredModules;
+        if (type == ExamType.TOT_NGHIEP) {
+            requiredModules = new LearningModule[]{
+                    LearningModule.LY_THUYET,
+                    LearningModule.MO_PHONG,
+                    LearningModule.CO_BAN_4H
+            };
+        } else {
+            requiredModules = new LearningModule[]{
+                    LearningModule.LY_THUYET,
+                    LearningModule.MO_PHONG,
+                    LearningModule.CO_BAN_4H,
+                    LearningModule.CABIN,
+                    LearningModule.DAT,
+                    LearningModule.SA_HINH_THO,
+                    LearningModule.SA_HINH_CAM_UNG
+            };
+        }
+        for (LearningModule module : requiredModules) {
+            boolean completed = progressList.stream().anyMatch(p ->
+                    p.getModule() == module && p.getStatus() == ProgressStatus.COMPLETED);
+            if (!completed) {
+                return false;
+            }
+        }
+        return true;
     }
 }

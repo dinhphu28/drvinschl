@@ -2,6 +2,7 @@ package com.dinhphu28.drvinschl.controller;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -118,5 +119,20 @@ public class StudentController {
             @RequestParam(required = false) Integer hours,
             @RequestParam(required = false) BigDecimal fee) {
         return studentService.registerExtra(userDetails.getUsername(), type, hours, fee);
+    }
+
+    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PostMapping("/bookings/{id}/cancel")
+    public TrainingBooking cancelBooking(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID id) {
+        return schedulingService.cancelBooking(userDetails.getUsername(), id);
+    }
+
+    @PreAuthorize("hasRole('HOC_VIEN')")
+    @GetMapping("/extra-registrations")
+    public List<ExtraRegistration> getExtraRegistrations(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return studentService.getExtraRegistrations(userDetails.getUsername());
     }
 }

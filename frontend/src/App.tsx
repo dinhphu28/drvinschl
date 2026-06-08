@@ -9,6 +9,7 @@ import TeacherPage from "./pages/TeacherPage";
 import AreaManagerPage from "./pages/AreaManagerPage";
 import AdminPage from "./pages/AdminPage";
 import DirectorPage from "./pages/DirectorPage";
+import StudentPage from "./pages/StudentPage";
 import MobileOnlyPage from "./pages/MobileOnlyPage";
 
 function App() {
@@ -18,6 +19,14 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/mobile-only" element={<MobileOnlyPage />} />
+        <Route
+          path="/student"
+          element={
+            <RoleRoute roles={["HOC_VIEN"]}>
+              <StudentPage />
+            </RoleRoute>
+          }
+        />
         <Route
           path="/sales"
           element={

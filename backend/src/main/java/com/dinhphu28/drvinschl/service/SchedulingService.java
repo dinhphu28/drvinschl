@@ -110,4 +110,84 @@ public class SchedulingService {
         slot.setVehicle(vehicle);
         return slotRepository.save(slot);
     }
+
+    @Transactional
+    public TrainingBooking scheduleStudentForSlot(UUID studentId, SessionType sessionType,
+            LocalDateTime startTime, LocalDateTime endTime, Integer teacherId, UUID vehicleId) {
+        Student student = userContextService.requireStudentById(studentId);
+        TrainingSlot slot = new TrainingSlot();
+        slot.setSessionType(sessionType);
+        slot.setStartTime(startTime);
+        slot.setEndTime(endTime);
+        slot.setAvailable(false);
+        if (teacherId != null) {
+            User teacher = userRepository.findById(teacherId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
+            slot.setTeacher(teacher);
+        }
+        if (vehicleId != null) {
+            Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
+            slot.setVehicle(vehicle);
+        }
+        slotRepository.save(slot);
+
+        TrainingBooking booking = new TrainingBooking();
+        booking.setStudent(student);
+        booking.setSlot(slot);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        return bookingRepository.save(booking);
+    }
+
+    public List<TrainingSlot> getCabinSlots(SessionType type) {
+        return slotRepository.findBySessionType(type);
+    }
+
+    @Transactional
+    public TrainingBooking assignStudentToCabin(UUID slotId, UUID studentId) {
+        TrainingSlot slot = slotRepository.findById(slotId)
+                .orElseThrow(() -> new ResourceNotFoundException("Slot not found"));
+        if (!slot.isAvailable()) {
+            throw new IllegalArgumentException("Slot is not available");
+        }
+        Student student = userContextService.requireStudentById(studentId);
+        slot.setAvailable(false);
+        slotRepository.save(slot);
+
+        TrainingBooking booking = new TrainingBooking();
+        booking.setStudent(student);
+        booking.setSlot(slot);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        return bookingRepository.save(booking);
+    }
+
+    public List<TrainingSlot> getAllSlots(SessionType sessionType, LocalDateTime dateStart, LocalDateTime dateEnd) {
+        if (sessionType != null && dateStart != null && dateEnd != null) {
+            return slotRepository.findBySessionTypeAndStartTimeAfterAndEndTimeBefore(sessionType, dateStart, dateEnd);
+        }
+        if (sessionType != null) {
+            return slotRepository.findBySessionType(sessionType);
+        }
+        if (dateStart != null && dateEnd != null) {
+            return slotRepository.findByStartTimeAfterAndEndTimeBefore(dateStart, dateEnd);
+        }
+        return slotRepository.findAll();
+    }
+
+    @Transactional
+    public TrainingBooking cancelBooking(String username, UUID bookingId) {
+        Student student = userContextService.requireStudent(username);
+        TrainingBooking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+        if (!booking.getStudent().getId().equals(student.getId())) {
+            throw new IllegalArgumentException("Booking does not belong to current student");
+        }
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+
+        TrainingSlot slot = booking.getSlot();
+        slot.setAvailable(true);
+        slotRepository.save(slot);
+        return booking;
+    }
 }

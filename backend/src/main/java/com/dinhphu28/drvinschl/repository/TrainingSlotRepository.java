@@ -12,4 +12,11 @@ import com.dinhphu28.drvinschl.entity.TrainingSlot;
 public interface TrainingSlotRepository extends JpaRepository<TrainingSlot, UUID> {
     List<TrainingSlot> findBySessionTypeAndAvailableTrueAndStartTimeAfter(
             SessionType sessionType, LocalDateTime after);
+
+    List<TrainingSlot> findBySessionType(SessionType sessionType);
+
+    List<TrainingSlot> findByStartTimeAfterAndEndTimeBefore(LocalDateTime after, LocalDateTime before);
+
+    List<TrainingSlot> findBySessionTypeAndStartTimeAfterAndEndTimeBefore(
+            SessionType sessionType, LocalDateTime after, LocalDateTime before);
 }

@@ -95,4 +95,42 @@ public class AccountingService {
     public List<SalaryRecord> getAllSalaries() {
         return salaryRecordRepository.findAll();
     }
+
+    @Transactional
+    public PaymentRecord recordRefund(String username, com.dinhphu28.drvinschl.model.RefundRequest request) {
+        User recorder = userContextService.requireUser(username);
+        Student student = studentRepository.findById(request.studentId())
+                .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+
+        PaymentRecord payment = new PaymentRecord();
+        payment.setStudent(student);
+        payment.setPaymentType(PaymentType.HOAN_PHI);
+        payment.setAmount(request.amount());
+        payment.setPaidAt(LocalDateTime.now());
+        payment.setNote(request.note());
+        payment.setRecordedBy(recorder);
+
+        BigDecimal paid = student.getPaidFee() != null ? student.getPaidFee() : BigDecimal.ZERO;
+        student.setPaidFee(paid.subtract(request.amount()));
+        studentRepository.save(student);
+
+        return paymentRecordRepository.save(payment);
+    }
+
+    public com.dinhphu28.drvinschl.model.FuelSummaryResponse getFuelSummary(int year, int month) {
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = start.plusMonths(1).minusDays(1);
+        List<FuelRecord> records = fuelRecordRepository.findByFuelDateBetween(start, end);
+
+        BigDecimal totalLiters = records.stream()
+                .map(FuelRecord::getLiters)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalCost = records.stream()
+                .map(FuelRecord::getAmount)
+                .filter(a -> a != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new com.dinhphu28.drvinschl.model.FuelSummaryResponse(year, month, totalLiters, totalCost);
+    }
 }

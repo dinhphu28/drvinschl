@@ -1,5 +1,6 @@
 package com.dinhphu28.drvinschl.controller;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dinhphu28.drvinschl.entity.SalaryRecord;
+import com.dinhphu28.drvinschl.model.CompletionStatsResponse;
+import com.dinhphu28.drvinschl.model.ExamStatsResponse;
 import com.dinhphu28.drvinschl.service.DirectorService;
 
 import lombok.RequiredArgsConstructor;
@@ -30,5 +33,20 @@ public class DirectorController {
     @PutMapping("/salaries/{id}/approve")
     public SalaryRecord approveSalary(@PathVariable UUID id) {
         return directorService.approveSalary(id);
+    }
+
+    @GetMapping("/salaries/pending")
+    public List<SalaryRecord> getPendingSalaries() {
+        return directorService.getPendingSalaries();
+    }
+
+    @GetMapping("/exam-stats")
+    public ExamStatsResponse getExamStats() {
+        return directorService.getExamStats();
+    }
+
+    @GetMapping("/completion-stats")
+    public CompletionStatsResponse getCompletionStats() {
+        return directorService.getCompletionStats();
     }
 }
