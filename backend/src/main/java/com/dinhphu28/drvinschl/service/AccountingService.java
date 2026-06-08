@@ -1,9 +1,11 @@
 package com.dinhphu28.drvinschl.service;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,11 +42,15 @@ public class AccountingService {
 
     @Transactional
     public Student createStudentAccount(CreateStudentAccountRequest request) {
+        String username = resolveStudentUsername(request.username(), request.fullName());
+        String password = hasText(request.password()) ? request.password().trim() : request.phone();
+        String email = hasText(request.email()) ? request.email().trim() : null;
+
         User user = User.builder()
-                .username(request.username())
-                .email(request.email())
+                .username(username)
+                .email(email)
                 .firstName(request.fullName())
-                .password(passwordEncoder.encode(request.password()))
+                .password(passwordEncoder.encode(password))
                 .role(Role.HOC_VIEN)
                 .isEnabled(true)
                 .build();
@@ -61,6 +67,33 @@ public class AccountingService {
         student.setApplicationDate(LocalDate.now());
         student.setCourseStatus(CourseStatus.DANG_KY);
         return studentRepository.save(student);
+    }
+
+    private String resolveStudentUsername(String requestedUsername, String fullName) {
+        String base = hasText(requestedUsername) ? requestedUsername.trim() : toPlainUsername(fullName);
+        if (!hasText(base)) {
+            base = "hocvien";
+        }
+        String candidate = base;
+        int suffix = 2;
+        while (userRepository.findByUsername(candidate).isPresent()) {
+            candidate = base + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+    private String toPlainUsername(String value) {
+        String normalized = Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'D')
+                .toLowerCase(Locale.ROOT);
+        return normalized.replaceAll("[^a-z0-9]", "");
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     @Transactional

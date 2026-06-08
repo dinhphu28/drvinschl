@@ -36,15 +36,24 @@ interface FuelSummary {
 }
 
 const coursePackageOptions = ["A", "A1", "B Số Sàn", "B Tự Động", "C1"];
+const emptyStudentForm = {
+  email: "", fullName: "", phone: "", dob: "", coursePackage: "B Số Sàn", totalFee: "15000000",
+};
+const buildStudentUsername = (fullName: string) =>
+  fullName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 
 const AccountingPage = () => {
   const [activeTab, setActiveTab] = useState("1");
   const [message, setMessage] = useState("");
 
   //Tạo tài khoản
-  const [studentForm, setStudentForm] = useState({
-    username: "", email: "", password: "", fullName: "", phone: "", dob: "", coursePackage: "B Số Sàn", totalFee: "15000000",
-  });
+  const [studentForm, setStudentForm] = useState(emptyStudentForm);
 
   //Thu phí
   const [paymentForm, setPaymentForm] = useState({
@@ -73,8 +82,15 @@ const AccountingPage = () => {
   const createStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post("/accounting/students", { ...studentForm, totalFee: Number(studentForm.totalFee) });
+      await api.post("/accounting/students", {
+        ...studentForm,
+        username: generatedStudentUsername,
+        password: studentForm.phone,
+        email: studentForm.email || undefined,
+        totalFee: Number(studentForm.totalFee),
+      });
       setMessage("Đã tạo tài khoản học viên");
+      setStudentForm(emptyStudentForm);
     } catch {
       setMessage("Không thể tạo học viên");
     }
@@ -128,6 +144,7 @@ const AccountingPage = () => {
   const toggleTab = (tab: string) => {
     if (activeTab !== tab) setActiveTab(tab);
   };
+  const generatedStudentUsername = buildStudentUsername(studentForm.fullName);
 
   return (
     <AppLayout title="Kế toán">
@@ -180,8 +197,8 @@ const AccountingPage = () => {
                   <Col md="6"><FormGroup><Label>Điện thoại</Label><Input value={studentForm.phone} onChange={(e) => setStudentForm({ ...studentForm, phone: e.target.value })} required /></FormGroup></Col>
                 </Row>
                 <Row>
-                  <Col md="6"><FormGroup><Label>Email</Label><Input type="email" value={studentForm.email} onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })} required /></FormGroup></Col>
-                  <Col md="6"><FormGroup><Label>Username</Label><Input value={studentForm.username} onChange={(e) => setStudentForm({ ...studentForm, username: e.target.value })} required /></FormGroup></Col>
+                  <Col md="6"><FormGroup><Label>Email</Label><Input type="email" value={studentForm.email} onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })} /></FormGroup></Col>
+                  <Col md="6"><FormGroup><Label>Tên đăng nhập tự sinh</Label><Input value={generatedStudentUsername || "Nhập họ tên học viên"} readOnly /></FormGroup></Col>
                 </Row>
                 <Row>
                   <Col md="4"><FormGroup><Label>Ngày sinh</Label><Input type="date" value={studentForm.dob} onChange={(e) => setStudentForm({ ...studentForm, dob: e.target.value })} required /></FormGroup></Col>
@@ -192,7 +209,7 @@ const AccountingPage = () => {
                   </FormGroup></Col>
                   <Col md="4"><FormGroup><Label>Học phí</Label><Input type="number" value={studentForm.totalFee} onChange={(e) => setStudentForm({ ...studentForm, totalFee: e.target.value })} /></FormGroup></Col>
                 </Row>
-                <FormGroup><Label>Mật khẩu</Label><Input type="password" value={studentForm.password} onChange={(e) => setStudentForm({ ...studentForm, password: e.target.value })} required /></FormGroup>
+                <FormGroup><Label>Mật khẩu mặc định</Label><Input value={studentForm.phone || "Nhập số điện thoại học viên"} readOnly /></FormGroup>
                 <Button color="primary">Tạo học viên</Button>
               </Form>
             </TabPane>
