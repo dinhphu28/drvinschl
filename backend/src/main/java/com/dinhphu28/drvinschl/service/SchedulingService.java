@@ -16,6 +16,11 @@ import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.entity.Vehicle;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
 import com.dinhphu28.drvinschl.model.CreateTrainingSlotRequest;
+import com.dinhphu28.drvinschl.model.StudentSummaryResponse;
+import com.dinhphu28.drvinschl.model.TrainingBookingResponse;
+import com.dinhphu28.drvinschl.model.TrainingSlotResponse;
+import com.dinhphu28.drvinschl.model.UserSummaryResponse;
+import com.dinhphu28.drvinschl.model.VehicleSummaryResponse;
 import com.dinhphu28.drvinschl.repository.TrainingBookingRepository;
 import com.dinhphu28.drvinschl.repository.TrainingSlotRepository;
 import com.dinhphu28.drvinschl.repository.UserRepository;
@@ -26,21 +31,36 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class SchedulingService {
+    private static final List<SessionType> STUDENT_BOOKABLE_TYPES = List.of(
+            SessionType.CO_BAN_4H,
+            SessionType.CABIN,
+            SessionType.DAT,
+            SessionType.SA_HINH_THO);
+
     private final TrainingSlotRepository slotRepository;
     private final TrainingBookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
     private final UserContextService userContextService;
 
-    public List<TrainingSlot> getAvailableSlots(SessionType type) {
-        return slotRepository.findBySessionTypeAndAvailableTrueAndStartTimeAfter(type, LocalDateTime.now());
+    public List<TrainingSlotResponse> getAvailableSlots(SessionType type) {
+        if (!STUDENT_BOOKABLE_TYPES.contains(type)) {
+            return List.of();
+        }
+        return slotRepository.findBySessionTypeAndAvailableTrueAndStartTimeAfter(type, LocalDateTime.now())
+                .stream()
+                .map(this::toSlotResponse)
+                .toList();
     }
 
     @Transactional
-    public TrainingBooking bookSlot(String username, UUID slotId) {
+    public TrainingBookingResponse bookSlot(String username, UUID slotId) {
         Student student = userContextService.requireStudent(username);
         TrainingSlot slot = slotRepository.findById(slotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Slot not found"));
+        if (!STUDENT_BOOKABLE_TYPES.contains(slot.getSessionType())) {
+            throw new IllegalArgumentException("Loại lịch này do Giáo vụ sắp xếp, học viên không thể tự đặt");
+        }
         if (!slot.isAvailable()) {
             throw new IllegalArgumentException("Slot is not available");
         }
@@ -51,17 +71,17 @@ public class SchedulingService {
         booking.setStudent(student);
         booking.setSlot(slot);
         booking.setStatus(BookingStatus.CONFIRMED);
-        return bookingRepository.save(booking);
+        return toBookingResponse(bookingRepository.save(booking));
     }
 
-    public List<TrainingBooking> getStudentBookings(String username) {
+    public List<TrainingBookingResponse> getStudentBookings(String username) {
         Student student = userContextService.requireStudent(username);
-        return bookingRepository.findByStudent(student);
+        return bookingRepository.findByStudent(student).stream().map(this::toBookingResponse).toList();
     }
 
-    public List<TrainingBooking> getTeacherSchedule(String username) {
+    public List<TrainingBookingResponse> getTeacherSchedule(String username) {
         User teacher = userContextService.requireUser(username);
-        return bookingRepository.findBySlotTeacher(teacher);
+        return bookingRepository.findBySlotTeacher(teacher).stream().map(this::toBookingResponse).toList();
     }
 
     @Transactional
@@ -112,7 +132,7 @@ public class SchedulingService {
     }
 
     @Transactional
-    public TrainingBooking scheduleStudentForSlot(UUID studentId, SessionType sessionType,
+    public TrainingBookingResponse scheduleStudentForSlot(UUID studentId, SessionType sessionType,
             LocalDateTime startTime, LocalDateTime endTime, Integer teacherId, UUID vehicleId) {
         Student student = userContextService.requireStudentById(studentId);
         TrainingSlot slot = new TrainingSlot();
@@ -136,7 +156,7 @@ public class SchedulingService {
         booking.setStudent(student);
         booking.setSlot(slot);
         booking.setStatus(BookingStatus.CONFIRMED);
-        return bookingRepository.save(booking);
+        return toBookingResponse(bookingRepository.save(booking));
     }
 
     public List<TrainingSlot> getCabinSlots(SessionType type) {
@@ -144,7 +164,7 @@ public class SchedulingService {
     }
 
     @Transactional
-    public TrainingBooking assignStudentToCabin(UUID slotId, UUID studentId) {
+    public TrainingBookingResponse assignStudentToCabin(UUID slotId, UUID studentId) {
         TrainingSlot slot = slotRepository.findById(slotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Slot not found"));
         if (!slot.isAvailable()) {
@@ -158,7 +178,7 @@ public class SchedulingService {
         booking.setStudent(student);
         booking.setSlot(slot);
         booking.setStatus(BookingStatus.CONFIRMED);
-        return bookingRepository.save(booking);
+        return toBookingResponse(bookingRepository.save(booking));
     }
 
     public List<TrainingSlot> getAllSlots(SessionType sessionType, LocalDateTime dateStart, LocalDateTime dateEnd) {
@@ -175,7 +195,7 @@ public class SchedulingService {
     }
 
     @Transactional
-    public TrainingBooking cancelBooking(String username, UUID bookingId) {
+    public TrainingBookingResponse cancelBooking(String username, UUID bookingId) {
         Student student = userContextService.requireStudent(username);
         TrainingBooking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
@@ -188,6 +208,31 @@ public class SchedulingService {
         TrainingSlot slot = booking.getSlot();
         slot.setAvailable(true);
         slotRepository.save(slot);
-        return booking;
+        return toBookingResponse(booking);
+    }
+
+    TrainingBookingResponse toBookingResponse(TrainingBooking booking) {
+        return new TrainingBookingResponse(
+                booking.getId(),
+                booking.getStatus(),
+                booking.getTeacherRating(),
+                booking.getTeacherComment(),
+                toSlotResponse(booking.getSlot()),
+                new StudentSummaryResponse(booking.getStudent().getId(), booking.getStudent().getFullName()));
+    }
+
+    private TrainingSlotResponse toSlotResponse(TrainingSlot slot) {
+        UserSummaryResponse teacher = slot.getTeacher() == null ? null
+                : new UserSummaryResponse(slot.getTeacher().getId(), slot.getTeacher().getFirstName(), slot.getTeacher().getLastName());
+        VehicleSummaryResponse vehicle = slot.getVehicle() == null ? null
+                : new VehicleSummaryResponse(slot.getVehicle().getId(), slot.getVehicle().getLicensePlate(), slot.getVehicle().getModel());
+        return new TrainingSlotResponse(
+                slot.getId(),
+                slot.getSessionType(),
+                slot.getStartTime(),
+                slot.getEndTime(),
+                slot.isAvailable(),
+                teacher,
+                vehicle);
     }
 }

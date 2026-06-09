@@ -12,6 +12,9 @@ import com.dinhphu28.drvinschl.entity.Contract;
 import com.dinhphu28.drvinschl.entity.Student;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
+import com.dinhphu28.drvinschl.model.ContractResponse;
+import com.dinhphu28.drvinschl.model.CreateContractRequest;
+import com.dinhphu28.drvinschl.model.UpdateContractRequest;
 import com.dinhphu28.drvinschl.repository.ContractRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
 
@@ -30,24 +33,59 @@ public class SalesService {
     }
 
     @Transactional
-    public Contract recordContract(String salesUsername, UUID studentId, Contract contractData) {
+    public ContractResponse recordContract(String salesUsername, CreateContractRequest request) {
         User sales = userContextService.requireUser(salesUsername);
+        UUID studentId = request.studentId();
+        if (studentId == null) {
+            throw new IllegalArgumentException("Student ID is required");
+        }
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
         student.setAssignedSales(sales);
         studentRepository.save(student);
 
+        Contract contractData = new Contract();
         contractData.setStudent(student);
         contractData.setSales(sales);
+        contractData.setAppointmentDate(request.appointmentDate());
+        contractData.setSignedDate(request.signedDate());
+        contractData.setContractAmount(request.contractAmount());
+        contractData.setCommissionAmount(request.commissionAmount());
         if (contractData.getCommissionAmount() == null && contractData.getContractAmount() != null) {
             contractData.setCommissionAmount(contractData.getContractAmount().multiply(new BigDecimal("0.05")));
         }
-        return contractRepository.save(contractData);
+        return toResponse(contractRepository.save(contractData));
     }
 
-    public List<Contract> getContracts(String salesUsername) {
+    public List<ContractResponse> getContracts(String salesUsername) {
         User sales = userContextService.requireUser(salesUsername);
-        return contractRepository.findBySales(sales);
+        return contractRepository.findBySales(sales).stream().map(this::toResponse).toList();
+    }
+
+    @Transactional
+    public ContractResponse updateContract(String salesUsername, UUID contractId, UpdateContractRequest request) {
+        User sales = userContextService.requireUser(salesUsername);
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new ResourceNotFoundException("Contract not found"));
+        if (!contract.getSales().getId().equals(sales.getId())) {
+            throw new IllegalArgumentException("Không thể sửa hợp đồng của nhân sự khác");
+        }
+        if (request.appointmentDate() != null) {
+            contract.setAppointmentDate(request.appointmentDate());
+        }
+        if (request.signedDate() != null) {
+            contract.setSignedDate(request.signedDate());
+        }
+        if (request.contractAmount() != null) {
+            contract.setContractAmount(request.contractAmount());
+        }
+        if (request.commissionAmount() != null) {
+            contract.setCommissionAmount(request.commissionAmount());
+        } else if (request.contractAmount() != null && contract.getCommissionAmount() == null) {
+            contract.setCommissionAmount(request.contractAmount().multiply(new BigDecimal("0.05")));
+        }
+        contract.setSales(sales);
+        return toResponse(contractRepository.save(contract));
     }
 
     @Transactional
@@ -83,5 +121,20 @@ public class SalesService {
         student.setSecondFeePaid(fee);
         studentRepository.save(student);
         return student;
+    }
+
+    private ContractResponse toResponse(Contract contract) {
+        return new ContractResponse(
+                contract.getId(),
+                contract.getStudent().getId(),
+                contract.getStudent().getFullName(),
+                contract.getAppointmentDate(),
+                contract.getSignedDate(),
+                contract.getContractAmount(),
+                contract.getCommissionAmount(),
+                contract.getStudent().isRegistrationFormSubmitted(),
+                contract.getStudent().isPhotoSubmitted(),
+                contract.getStudent().isHealthCheckSubmitted(),
+                contract.getStudent().isSecondFeePaid());
     }
 }

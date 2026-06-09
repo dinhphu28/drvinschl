@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dinhphu28.drvinschl.entity.SessionType;
-import com.dinhphu28.drvinschl.entity.Student;
-import com.dinhphu28.drvinschl.entity.TrainingBooking;
 import com.dinhphu28.drvinschl.entity.TrainingSlot;
+import com.dinhphu28.drvinschl.entity.Student;
 import com.dinhphu28.drvinschl.model.CreateTrainingSlotRequest;
 import com.dinhphu28.drvinschl.model.ScheduleStudentRequest;
+import com.dinhphu28.drvinschl.model.TrainingBookingResponse;
 import com.dinhphu28.drvinschl.service.OpsService;
 import com.dinhphu28.drvinschl.service.SchedulingService;
 
@@ -35,7 +35,7 @@ public class OpsController {
 
     @PreAuthorize("hasAnyRole('GIAO_VU_KHU_VUC', 'GIAO_VU_SA_HINH')")
     @GetMapping("/bookings")
-    public List<TrainingBooking> getBookings() {
+    public List<TrainingBookingResponse> getBookings() {
         return opsService.getPendingBookings();
     }
 
@@ -62,7 +62,7 @@ public class OpsController {
 
     @PreAuthorize("hasAnyRole('GIAO_VU_KHU_VUC', 'GIAO_VU_SA_HINH')")
     @PostMapping("/students/{studentId}/schedule")
-    public TrainingBooking scheduleStudent(
+    public TrainingBookingResponse scheduleStudent(
             @PathVariable UUID studentId,
             @RequestParam SessionType sessionType,
             @RequestParam LocalDateTime start,
@@ -82,7 +82,7 @@ public class OpsController {
 
     @PreAuthorize("hasAnyRole('GIAO_VU_KHU_VUC', 'GIAO_VU_SA_HINH')")
     @PutMapping("/cabin/{slotId}/assign-student")
-    public TrainingBooking assignStudentToCabin(
+    public TrainingBookingResponse assignStudentToCabin(
             @PathVariable UUID slotId,
             @RequestParam UUID studentId) {
         return schedulingService.assignStudentToCabin(slotId, studentId);

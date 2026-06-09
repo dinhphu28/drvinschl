@@ -1,7 +1,7 @@
 package com.dinhphu28.drvinschl.controller;
 
-import java.util.List;
 import java.util.UUID;
+import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.dinhphu28.drvinschl.entity.Contract;
 import com.dinhphu28.drvinschl.entity.Student;
+import com.dinhphu28.drvinschl.model.ContractResponse;
+import com.dinhphu28.drvinschl.model.CreateContractRequest;
+import com.dinhphu28.drvinschl.model.UpdateContractRequest;
 import com.dinhphu28.drvinschl.service.SalesService;
 
 import lombok.RequiredArgsConstructor;
@@ -33,16 +35,23 @@ public class SalesController {
         return salesService.getAssignedStudents(userDetails.getUsername());
     }
 
-    @PostMapping("/contracts/{studentId}")
-    public Contract recordContract(
+    @PostMapping("/contracts")
+    public ContractResponse recordContract(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable UUID studentId,
-            @RequestBody Contract contract) {
-        return salesService.recordContract(userDetails.getUsername(), studentId, contract);
+            @RequestBody CreateContractRequest request) {
+        return salesService.recordContract(userDetails.getUsername(), request);
+    }
+
+    @PutMapping("/contracts/{contractId}")
+    public ContractResponse updateContract(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID contractId,
+            @RequestBody UpdateContractRequest request) {
+        return salesService.updateContract(userDetails.getUsername(), contractId, request);
     }
 
     @GetMapping("/contracts")
-    public List<Contract> getContracts(@AuthenticationPrincipal UserDetails userDetails) {
+    public java.util.List<ContractResponse> getContracts(@AuthenticationPrincipal UserDetails userDetails) {
         return salesService.getContracts(userDetails.getUsername());
     }
 

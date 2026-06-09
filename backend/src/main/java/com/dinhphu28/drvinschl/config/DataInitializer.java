@@ -1,6 +1,7 @@
 package com.dinhphu28.drvinschl.config;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 
 import org.springframework.boot.CommandLineRunner;
@@ -12,16 +13,19 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.dinhphu28.drvinschl.entity.CoursePackage;
 import com.dinhphu28.drvinschl.entity.CourseStatus;
 import com.dinhphu28.drvinschl.entity.Role;
+import com.dinhphu28.drvinschl.entity.SessionType;
 import com.dinhphu28.drvinschl.entity.Student;
 import com.dinhphu28.drvinschl.entity.StudentCourseEnrollment;
 import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
+import com.dinhphu28.drvinschl.entity.TrainingSlot;
 import com.dinhphu28.drvinschl.model.LeaveWorkflowConfig;
 import com.dinhphu28.drvinschl.repository.CoursePackageRepository;
 import com.dinhphu28.drvinschl.repository.StudentCourseEnrollmentRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
 import com.dinhphu28.drvinschl.repository.SystemConfigRepository;
 import com.dinhphu28.drvinschl.repository.UserRepository;
+import com.dinhphu28.drvinschl.repository.TrainingSlotRepository;
 import com.dinhphu28.drvinschl.service.StudentService;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +38,7 @@ public class DataInitializer {
     private final CoursePackageRepository coursePackageRepository;
     private final StudentCourseEnrollmentRepository studentCourseEnrollmentRepository;
     private final SystemConfigRepository systemConfigRepository;
+    private final TrainingSlotRepository trainingSlotRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Bean
@@ -85,6 +90,7 @@ public class DataInitializer {
             upsertConfig("THI_LAI_DUONG_TRUONG", "500000", "Phí thi lại đường trường");
             upsertConfig(LeaveWorkflowConfig.CONFIG_KEY, defaultLeaveWorkflowConfig(), "Quy trình nghỉ phép theo quy định của trung tâm");
             upsertConfig(StudentService.SAT_HACH_INSTRUCTIONS_KEY, defaultSatHachInstructions(), "Hướng dẫn Thi Sát Hạch cho học viên");
+            seedStudentBookingSlots();
         };
     }
 
@@ -153,6 +159,40 @@ public class DataInitializer {
             pkg.setActive(false);
             coursePackageRepository.save(pkg);
         });
+    }
+
+    private void seedStudentBookingSlots() {
+        boolean hasFutureBookableSlot = trainingSlotRepository
+                .findBySessionTypeAndAvailableTrueAndStartTimeAfter(SessionType.CO_BAN_4H, LocalDateTime.now())
+                .stream().findAny().isPresent()
+                || trainingSlotRepository.findBySessionTypeAndAvailableTrueAndStartTimeAfter(SessionType.CABIN, LocalDateTime.now())
+                        .stream().findAny().isPresent()
+                || trainingSlotRepository.findBySessionTypeAndAvailableTrueAndStartTimeAfter(SessionType.DAT, LocalDateTime.now())
+                        .stream().findAny().isPresent()
+                || trainingSlotRepository.findBySessionTypeAndAvailableTrueAndStartTimeAfter(SessionType.SA_HINH_THO, LocalDateTime.now())
+                        .stream().findAny().isPresent()
+                || trainingSlotRepository.findBySessionTypeAndAvailableTrueAndStartTimeAfter(SessionType.SA_HINH_CAM_UNG, LocalDateTime.now())
+                        .stream().findAny().isPresent();
+        if (hasFutureBookableSlot) {
+            return;
+        }
+        LocalDateTime base = LocalDate.now().plusDays(1).atTime(8, 0);
+        SessionType[] types = {
+                SessionType.CO_BAN_4H,
+                SessionType.CABIN,
+                SessionType.DAT,
+                SessionType.SA_HINH_THO
+        };
+        for (int day = 0; day < 5; day++) {
+            for (int index = 0; index < types.length; index++) {
+                TrainingSlot slot = new TrainingSlot();
+                slot.setSessionType(types[index]);
+                slot.setStartTime(base.plusDays(day).plusHours(index * 2L));
+                slot.setEndTime(base.plusDays(day).plusHours(index * 2L + 2));
+                slot.setAvailable(true);
+                trainingSlotRepository.save(slot);
+            }
+        }
     }
 
     private void upsertCoursePackage(

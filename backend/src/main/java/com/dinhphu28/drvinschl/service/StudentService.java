@@ -17,6 +17,7 @@ import com.dinhphu28.drvinschl.entity.StudentCourseEnrollment;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
 import com.dinhphu28.drvinschl.model.LearningProgressResponse;
+import com.dinhphu28.drvinschl.model.ExtraRegistrationResponse;
 import com.dinhphu28.drvinschl.model.RichTextConfigResponse;
 import com.dinhphu28.drvinschl.model.StudentCourseEnrollmentResponse;
 import com.dinhphu28.drvinschl.model.StudentProfileResponse;
@@ -92,7 +93,7 @@ public class StudentService {
     }
 
     @Transactional
-    public ExtraRegistration registerExtra(String username, ExtraRegistration.ExtraType type, Integer hours, BigDecimal fee) {
+    public ExtraRegistrationResponse registerExtra(String username, ExtraRegistration.ExtraType type, Integer hours, BigDecimal fee) {
         Student student = userContextService.requireStudent(username);
         Integer requestedHours = hours != null && hours > 0 ? hours : 1;
         BigDecimal resolvedFee = fee != null ? fee : getExtraHourPrice(type).multiply(BigDecimal.valueOf(requestedHours));
@@ -103,7 +104,7 @@ public class StudentService {
         reg.setFee(resolvedFee);
         ExtraRegistration saved = extraRegistrationRepository.save(reg);
         addExtraHoursToProgress(student, type, requestedHours);
-        return saved;
+        return new ExtraRegistrationResponse(saved.getId(), saved.getExtraType(), saved.getHours(), saved.getFee());
     }
 
     private void addExtraHoursToProgress(Student student, ExtraRegistration.ExtraType type, Integer hours) {
@@ -168,9 +169,11 @@ public class StudentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
     }
 
-    public List<ExtraRegistration> getExtraRegistrations(String username) {
+    public List<ExtraRegistrationResponse> getExtraRegistrations(String username) {
         Student student = userContextService.requireStudent(username);
-        return extraRegistrationRepository.findByStudent(student);
+        return extraRegistrationRepository.findByStudent(student).stream()
+                .map(item -> new ExtraRegistrationResponse(item.getId(), item.getExtraType(), item.getHours(), item.getFee()))
+                .toList();
     }
 
     public RichTextConfigResponse getSatHachInstructions() {

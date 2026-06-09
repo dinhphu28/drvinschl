@@ -17,13 +17,6 @@ interface Student {
   courseStatus: string;
 }
 
-const salesSidebarItems = [
-  { id: "1", label: "Học viên" },
-  { id: "2", label: "Hợp đồng" },
-  { id: "3", label: "Hồ sơ" },
-  { id: "4", label: "Hoa hồng" },
-];
-
 interface Contract {
   id: string;
   studentId: string;
@@ -45,40 +38,39 @@ interface CommissionRow {
   contractCount: number;
 }
 
+interface SalesContractUpdateRequest {
+  appointmentDate?: string | null;
+  signedDate?: string | null;
+  contractAmount?: number | null;
+}
+
+interface SalesContractCreateRequest {
+  studentId: string;
+  appointmentDate?: string | null;
+  signedDate?: string | null;
+  contractAmount?: number | null;
+  commissionAmount?: number | null;
+}
+
+const salesSidebarItems = [
+  { id: "1", label: "Học viên" },
+  { id: "2", label: "Hợp đồng" },
+  { id: "3", label: "Hồ sơ" },
+  { id: "4", label: "Hoa hồng" },
+];
+
+const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value : []);
+
 const SalesPage = () => {
   const [activeTab, setActiveTab] = useState("1");
+  const [message, setMessage] = useState("");
 
-  //Học viên
   const [students, setStudents] = useState<Student[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(true);
 
-  useEffect(() => {
-    api.get<Student[]>("/sales/students")
-      .then((res) => setStudents(res.data))
-      .finally(() => setStudentsLoading(false));
-  }, []);
-
-  const handleRemindFee = async (studentId: string) => {
-    try {
-      await api.post(`/sales/students/${studentId}/remind-fee`);
-      alert("Đã gửi nhắc đóng phí");
-    } catch {
-      alert("Không thể gửi nhắc nhở");
-    }
-  };
-
-  const handleRemindHealth = async (studentId: string) => {
-    try {
-      await api.post(`/sales/students/${studentId}/remind-health`);
-      alert("Đã gửi nhắc nộp khám sức khỏe");
-    } catch {
-      alert("Không thể gửi nhắc nhở");
-    }
-  };
-
-  //Hợp đồng
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [contractsLoading, setContractsLoading] = useState(true);
+  const [editingContractId, setEditingContractId] = useState("");
   const [contractForm, setContractForm] = useState({
     studentId: "",
     appointmentDate: "",
@@ -86,29 +78,6 @@ const SalesPage = () => {
     contractAmount: "",
   });
 
-  useEffect(() => {
-    api.get<Contract[]>("/sales/contracts")
-      .then((res) => setContracts(res.data))
-      .finally(() => setContractsLoading(false));
-  }, []);
-
-  const createContract = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await api.post(`/sales/contracts/${contractForm.studentId}`, {
-        appointmentDate: contractForm.appointmentDate,
-        signedDate: contractForm.signedDate,
-        contractAmount: Number(contractForm.contractAmount),
-      });
-      setContractForm({ studentId: "", appointmentDate: "", signedDate: "", contractAmount: "" });
-      api.get<Contract[]>("/sales/contracts").then((res) => setContracts(res.data));
-      alert("Đã tạo hợp đồng");
-    } catch {
-      alert("Không thể tạo hợp đồng");
-    }
-  };
-
-  //Hồ sơ
   const [dossierForm, setDossierForm] = useState({
     studentId: "",
     registrationForm: false,
@@ -116,6 +85,108 @@ const SalesPage = () => {
     healthCheck: false,
     fee: false,
   });
+
+  const [commissions, setCommissions] = useState<CommissionRow[]>([]);
+  const [commissionsLoading, setCommissionsLoading] = useState(true);
+
+  const loadStudents = () => {
+    setStudentsLoading(true);
+    api.get<Student[]>("/sales/students")
+      .then((res) => setStudents(asArray<Student>(res.data)))
+      .catch(() => setStudents([]))
+      .finally(() => setStudentsLoading(false));
+  };
+
+  const loadContracts = () => {
+    setContractsLoading(true);
+    api.get<Contract[]>("/sales/contracts")
+      .then((res) => setContracts(asArray<Contract>(res.data)))
+      .catch(() => setContracts([]))
+      .finally(() => setContractsLoading(false));
+  };
+
+  const loadCommissions = () => {
+    setCommissionsLoading(true);
+    api.get<CommissionRow[]>("/sales/commissions/monthly")
+      .then((res) => setCommissions(asArray<CommissionRow>(res.data)))
+      .catch(() => setCommissions([]))
+      .finally(() => setCommissionsLoading(false));
+  };
+
+  useEffect(() => {
+    loadStudents();
+    loadContracts();
+    loadCommissions();
+  }, []);
+
+  const flash = (text: string) => {
+    setMessage(text);
+    window.setTimeout(() => setMessage(""), 3000);
+  };
+
+  const handleRemindFee = async (studentId: string) => {
+    try {
+      await api.post(`/sales/students/${studentId}/remind-fee`);
+      flash("Đã gửi nhắc đóng phí");
+    } catch {
+      flash("Không thể gửi nhắc nhở");
+    }
+  };
+
+  const handleRemindHealth = async (studentId: string) => {
+    try {
+      await api.post(`/sales/students/${studentId}/remind-health`);
+      flash("Đã gửi nhắc nộp khám sức khỏe");
+    } catch {
+      flash("Không thể gửi nhắc nhở");
+    }
+  };
+
+  const createContract = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingContractId) {
+        const payload: SalesContractUpdateRequest = {
+          appointmentDate: contractForm.appointmentDate || null,
+          signedDate: contractForm.signedDate || null,
+          contractAmount: contractForm.contractAmount ? Number(contractForm.contractAmount) : null,
+        };
+        await api.put(`/sales/contracts/${editingContractId}`, payload);
+        flash("Đã cập nhật hợp đồng");
+      } else {
+        const payload: SalesContractCreateRequest = {
+          studentId: contractForm.studentId,
+          appointmentDate: contractForm.appointmentDate,
+          signedDate: contractForm.signedDate,
+          contractAmount: contractForm.contractAmount ? Number(contractForm.contractAmount) : null,
+        };
+        await api.post(`/sales/contracts`, payload);
+        flash("Đã tạo hợp đồng");
+      }
+      setEditingContractId("");
+      setContractForm({ studentId: "", appointmentDate: "", signedDate: "", contractAmount: "" });
+      loadStudents();
+      loadContracts();
+    } catch (err: any) {
+      flash(err?.response?.data?.error || (editingContractId ? "Không thể cập nhật hợp đồng" : "Không thể tạo hợp đồng"));
+    }
+  };
+
+  const startEditContract = (contract: Contract) => {
+    setEditingContractId(contract.id);
+    setContractForm({
+      studentId: contract.studentId,
+      appointmentDate: contract.appointmentDate ? contract.appointmentDate.slice(0, 16) : "",
+      signedDate: contract.signedDate ? contract.signedDate.slice(0, 10) : "",
+      contractAmount: String(contract.contractAmount ?? ""),
+    });
+    setActiveTab("2");
+  };
+
+  const cancelEditContract = () => {
+    setEditingContractId("");
+    setContractForm({ studentId: "", appointmentDate: "", signedDate: "", contractAmount: "" });
+  };
 
   const updateDossier = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,40 +200,27 @@ const SalesPage = () => {
         },
       });
       setDossierForm({ studentId: "", registrationForm: false, photo: false, healthCheck: false, fee: false });
-      alert("Đã cập nhật hồ sơ");
+      flash("Đã cập nhật hồ sơ");
+      loadStudents();
+      loadContracts();
     } catch {
-      alert("Không thể cập nhật hồ sơ");
+      flash("Không thể cập nhật hồ sơ");
     }
   };
 
-  //Hoa hồng
-  const [commissions, setCommissions] = useState<CommissionRow[]>([]);
-  const [commissionsLoading, setCommissionsLoading] = useState(true);
-
-  useEffect(() => {
-    api.get<CommissionRow[]>("/sales/commissions/monthly")
-      .then((res) => setCommissions(res.data))
-      .finally(() => setCommissionsLoading(false));
-  }, []);
-
-  const totalCommission = commissions.reduce((sum, c) => sum + c.totalCommission, 0);
-
-  const toggleTab = (tab: string) => {
-    if (activeTab !== tab) setActiveTab(tab);
-  };
+  const totalCommission = asArray<CommissionRow>(commissions).reduce((sum, c) => sum + Number(c.totalCommission || 0), 0);
 
   return (
     <AppLayout
       title="Kinh doanh"
       sidebarItems={salesSidebarItems}
       activeSidebarItem={activeTab}
-      onSidebarItemClick={toggleTab}
+      onSidebarItemClick={setActiveTab}
     >
       <Card className="content-card">
         <CardBody>
+          {message && <div className={`alert ${message.startsWith("Không") ? "alert-danger" : "alert-success"}`}>{message}</div>}
           <TabContent activeTab={activeTab}>
-
-            {/* Học viên */}
             <TabPane tabId="1">
               <h5 className="mb-3">Học viên phụ trách ({students.length})</h5>
               {studentsLoading ? (
@@ -202,15 +260,14 @@ const SalesPage = () => {
               )}
             </TabPane>
 
-            {/* Hợp đồng */}
             <TabPane tabId="2">
-              <h5 className="mb-3">Tạo hợp đồng mới</h5>
+              <h5 className="mb-3">{editingContractId ? "Cập nhật hợp đồng" : "Tạo hợp đồng mới"}</h5>
               <Form onSubmit={createContract} className="mb-4">
                 <Row>
                   <Col md="6">
                     <FormGroup>
                       <Label>Học viên</Label>
-                      <StudentPicker value={contractForm.studentId} onChange={(studentId) => setContractForm({ ...contractForm, studentId })} required />
+                      <StudentPicker value={contractForm.studentId} onChange={(studentId) => setContractForm({ ...contractForm, studentId })} required={!editingContractId} />
                     </FormGroup>
                   </Col>
                   <Col md="6">
@@ -249,7 +306,10 @@ const SalesPage = () => {
                     </FormGroup>
                   </Col>
                 </Row>
-                <Button color="primary" type="submit">Tạo hợp đồng</Button>
+                <div className="d-flex gap-2">
+                  <Button color="primary" type="submit">{editingContractId ? "Cập nhật hợp đồng" : "Tạo hợp đồng"}</Button>
+                  {editingContractId && <Button color="secondary" type="button" outline onClick={cancelEditContract}>Hủy</Button>}
+                </div>
               </Form>
 
               <h5 className="mb-3">Danh sách hợp đồng ({contracts.length})</h5>
@@ -270,6 +330,7 @@ const SalesPage = () => {
                       <th>Ảnh</th>
                       <th>KS</th>
                       <th>Phí</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -277,13 +338,16 @@ const SalesPage = () => {
                       <tr key={c.id}>
                         <td><strong>{c.studentName}</strong></td>
                         <td>{c.appointmentDate ? new Date(c.appointmentDate).toLocaleString("vi-VN") : "—"}</td>
-                        <td>{c.signedDate}</td>
-                        <td>{Number(c.contractAmount).toLocaleString()} đ</td>
-                        <td>{Number(c.commission).toLocaleString()} đ</td>
+                        <td>{c.signedDate ? new Date(c.signedDate).toLocaleDateString("vi-VN") : "—"}</td>
+                        <td>{Number(c.contractAmount ?? 0).toLocaleString()} đ</td>
+                        <td>{Number(c.commission ?? 0).toLocaleString()} đ</td>
                         <td>{c.dossierRegistrationForm ? "✅" : "❌"}</td>
                         <td>{c.dossierPhoto ? "✅" : "❌"}</td>
                         <td>{c.dossierHealthCheck ? "✅" : "❌"}</td>
                         <td>{c.dossierFee ? "✅" : "❌"}</td>
+                        <td>
+                          <Button color="info" size="sm" onClick={() => startEditContract(c)}>Sửa</Button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -291,7 +355,6 @@ const SalesPage = () => {
               )}
             </TabPane>
 
-            {/* Hồ sơ */}
             <TabPane tabId="3">
               <h5 className="mb-3">Cập nhật hồ sơ học viên</h5>
               <Form onSubmit={updateDossier}>
@@ -341,7 +404,6 @@ const SalesPage = () => {
               </Form>
             </TabPane>
 
-            {/* Hoa hồng */}
             <TabPane tabId="4">
               <h5 className="mb-3">Tổng hoa hồng theo tháng</h5>
               <div className="mb-3 p-3 bg-light rounded">
@@ -373,7 +435,6 @@ const SalesPage = () => {
                 </Table>
               )}
             </TabPane>
-
           </TabContent>
         </CardBody>
       </Card>

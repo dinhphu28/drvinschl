@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.dinhphu28.drvinschl.entity.CourseStatus;
 import com.dinhphu28.drvinschl.entity.Student;
-import com.dinhphu28.drvinschl.entity.TrainingBooking;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
+import com.dinhphu28.drvinschl.model.TrainingBookingResponse;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
 import com.dinhphu28.drvinschl.repository.TrainingBookingRepository;
 
@@ -23,8 +23,10 @@ public class OpsService {
     private final StudentRepository studentRepository;
     private final SchedulingService schedulingService;
 
-    public List<TrainingBooking> getPendingBookings() {
-        return bookingRepository.findAll();
+    public List<TrainingBookingResponse> getPendingBookings() {
+        return bookingRepository.findAll().stream()
+                .map(schedulingService::toBookingResponse)
+                .toList();
     }
 
     @Transactional

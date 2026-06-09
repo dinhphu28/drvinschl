@@ -146,7 +146,12 @@ const sessionTypes: { value: StudentSessionType; label: string }[] = [
   { value: "CABIN", label: "Cabin" },
   { value: "DAT", label: "DAT" },
   { value: "SA_HINH_THO", label: "Sa hình thô" },
-  { value: "SA_HINH_CAM_UNG", label: "Sa hình cảm ứng" },
+];
+const sessionTypeOrder: StudentSessionType[] = [
+  "CO_BAN_4H",
+  "CABIN",
+  "DAT",
+  "SA_HINH_THO",
 ];
 
 const moduleLabels: Record<string, string> = {
@@ -214,6 +219,13 @@ const StudentPage = () => {
   const [satHachInstructions, setSatHachInstructions] = useState("");
   const [extras, setExtras] = useState<ExtraRegistration[]>([]);
   const [sessionType, setSessionType] = useState<StudentSessionType>("CO_BAN_4H");
+  const [availableByType, setAvailableByType] = useState<Record<StudentSessionType, number>>({
+    CO_BAN_4H: 0,
+    CABIN: 0,
+    DAT: 0,
+    SA_HINH_THO: 0,
+    SA_HINH_CAM_UNG: 0,
+  });
   const [ratingBookingId, setRatingBookingId] = useState("");
   const [ratingValue, setRatingValue] = useState("5");
   const [ratingComment, setRatingComment] = useState("");
@@ -248,14 +260,50 @@ const StudentPage = () => {
   }, [profile]);
 
   useEffect(() => {
-    getAvailableStudentSlots(sessionType).then((r) => setSlots(asArray<Slot>(r.data))).catch(() => setSlots([]));
+    let cancelled = false;
+    Promise.all(
+      sessionTypeOrder.map((type) =>
+        getAvailableStudentSlots(type)
+          .then((r) => ({ type, slots: asArray<Slot>(r.data) }))
+          .catch(() => ({ type, slots: [] as Slot[] })),
+      ),
+    ).then((results) => {
+      if (cancelled) {
+        return;
+      }
+      const counts = results.reduce((acc, item) => {
+        acc[item.type] = item.slots.length;
+        return acc;
+      }, {
+        CO_BAN_4H: 0,
+        CABIN: 0,
+        DAT: 0,
+        SA_HINH_THO: 0,
+        SA_HINH_CAM_UNG: 0,
+      } as Record<StudentSessionType, number>);
+      setAvailableByType(counts);
+      const current = results.find((item) => item.type === sessionType)?.slots ?? [];
+      setSlots(current);
+      if (current.length === 0) {
+        const firstWithSlots = results.find((item) => item.slots.length > 0);
+        if (firstWithSlots && firstWithSlots.type !== sessionType) {
+          setSessionType(firstWithSlots.type);
+          setSlots(firstWithSlots.slots);
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [sessionType]);
 
   const bookingOptions = useMemo(
-    () => bookings.map((booking) => ({
-      value: booking.id,
-      label: `${booking.slot?.sessionType?.replace(/_/g, " ")} - ${new Date(booking.slot?.startTime).toLocaleString("vi-VN")}`,
-    })),
+    () => bookings
+      .filter((booking) => booking.status === "COMPLETED" || booking.teacherRating != null)
+      .map((booking) => ({
+        value: booking.id,
+        label: `${booking.slot?.sessionType?.replace(/_/g, " ")} - ${new Date(booking.slot?.startTime).toLocaleString("vi-VN")}`,
+      })),
     [bookings],
   );
   const progressByModule = useMemo(
@@ -267,6 +315,9 @@ const StudentPage = () => {
   );
   const activeProgress = progressByModule[activeProgressModule];
   const safeSlots = asArray<Slot>(slots);
+  const totalRequiredHours = progress.reduce((sum, item) => sum + Number(item.requiredHours || 0), 0);
+  const totalCompletedHours = progress.reduce((sum, item) => sum + Number(item.completedHours || 0), 0);
+  const totalExtraHours = extras.reduce((sum, item) => sum + Number(item.hours || 0), 0);
   const courseEnrollments = profile?.courseEnrollments?.length
     ? profile.courseEnrollments
     : profile?.coursePackage
@@ -470,6 +521,11 @@ const StudentPage = () => {
                           </div>
                           {activeProgress && <StatusBadge status={activeProgress.status} />}
                         </div>
+                        <Row className="g-3 student-summary-grid mb-3">
+                          <Col md="4"><div className="student-summary-item"><div className="text-muted small">Tổng giờ đã học</div><div className="fw-semibold">{totalCompletedHours}</div></div></Col>
+                          <Col md="4"><div className="student-summary-item"><div className="text-muted small">Tổng giờ đăng ký</div><div className="fw-semibold">{totalRequiredHours}</div></div></Col>
+                          <Col md="4"><div className="student-summary-item"><div className="text-muted small">Giờ đăng ký thêm</div><div className="fw-semibold">{totalExtraHours}</div></div></Col>
+                        </Row>
                         {activeProgress ? (
                           <Row className="g-3 student-summary-grid">
                             <Col md="3"><div className="student-summary-item"><div className="text-muted small">Giờ đã học</div><div className="fw-semibold">{activeProgress.completedHours ?? 0}/{activeProgress.requiredHours ?? 0}</div></div></Col>
@@ -497,11 +553,11 @@ const StudentPage = () => {
                         {sessionTypes.map((item) => (
                           <Button
                             key={item.value}
-                            color={sessionType === item.value ? "primary" : "light"}
+                            color={sessionType === item.value ? "primary" : "secondary"}
                             outline={sessionType !== item.value}
                             onClick={() => setSessionType(item.value)}
                           >
-                            {item.label}
+                            {item.label} ({availableByType[item.value] ?? 0})
                           </Button>
                         ))}
                       </div>
@@ -594,11 +650,14 @@ const StudentPage = () => {
                   <Card className="mb-3">
                     <CardHeader>Đăng ký thêm giờ</CardHeader>
                     <CardBody>
+                      <div className="mb-3 text-muted small">
+                        Tổng số giờ đã đăng ký thêm: <strong>{totalExtraHours}</strong>
+                      </div>
                       <Form onSubmit={handleRegisterExtra}>
                         <FormGroup>
                           <Label>Loại</Label>
                           <Input type="select" value={extraType} onChange={(e) => setExtraType(e.target.value as StudentExtraType)}>
-                            <option value="DUONG_TRUONG">Thực hành đường trường</option>
+                            <option value="DUONG_TRUONG">Đường trường</option>
                             <option value="SA_HINH_THO">Sa hình thô</option>
                             <option value="SA_HINH_CAM_UNG_TAP">Sa hình cảm ứng tập</option>
                             <option value="SA_HINH_CAM_UNG_THI">Sa hình cảm ứng thi</option>
