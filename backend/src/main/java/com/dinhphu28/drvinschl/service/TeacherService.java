@@ -48,6 +48,7 @@ public class TeacherService {
     private final MaintenanceRecordRepository maintenanceRecordRepository;
     private final UserContextService userContextService;
     private final LearningProgressRepository learningProgressRepository;
+    private final LeaveWorkflowConfigService leaveWorkflowConfigService;
 
     public List<TrainingBooking> getSchedule(String username) {
         User teacher = userContextService.requireUser(username);
@@ -162,6 +163,7 @@ public class TeacherService {
 
     @Transactional
     public LeaveRequest requestLeave(String username, LocalDate start, LocalDate end, String reason) {
+        leaveWorkflowConfigService.validateNewRequest(start, end, reason);
         User teacher = userContextService.requireUser(username);
         LeaveRequest request = new LeaveRequest();
         request.setTeacher(teacher);

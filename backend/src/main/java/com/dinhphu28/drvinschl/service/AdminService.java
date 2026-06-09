@@ -14,6 +14,7 @@ import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
 import com.dinhphu28.drvinschl.model.CreateUserRequest;
+import com.dinhphu28.drvinschl.model.LeaveWorkflowConfig;
 import com.dinhphu28.drvinschl.model.UserProfileResponse;
 import com.dinhphu28.drvinschl.repository.CoursePackageRepository;
 import com.dinhphu28.drvinschl.repository.SystemConfigRepository;
@@ -30,6 +31,7 @@ public class AdminService {
     private final CoursePackageRepository coursePackageRepository;
     private final SystemConfigRepository systemConfigRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LeaveWorkflowConfigService leaveWorkflowConfigService;
 
     @Transactional
     public User createUser(CreateUserRequest request) {
@@ -70,6 +72,14 @@ public class AdminService {
 
     public List<SystemConfig> getConfigs() {
         return systemConfigRepository.findAll();
+    }
+
+    public LeaveWorkflowConfig getLeaveWorkflowConfig() {
+        return leaveWorkflowConfigService.getConfig();
+    }
+
+    public LeaveWorkflowConfig saveLeaveWorkflowConfig(LeaveWorkflowConfig config) {
+        return leaveWorkflowConfigService.saveConfig(config);
     }
 
     @Transactional

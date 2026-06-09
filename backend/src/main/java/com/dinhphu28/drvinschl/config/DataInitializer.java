@@ -16,6 +16,7 @@ import com.dinhphu28.drvinschl.entity.Student;
 import com.dinhphu28.drvinschl.entity.StudentCourseEnrollment;
 import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
+import com.dinhphu28.drvinschl.model.LeaveWorkflowConfig;
 import com.dinhphu28.drvinschl.repository.CoursePackageRepository;
 import com.dinhphu28.drvinschl.repository.StudentCourseEnrollmentRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
@@ -82,6 +83,7 @@ public class DataInitializer {
             upsertConfig("THI_LAI_MO_PHONG", "300000", "Phí thi lại mô phỏng");
             upsertConfig("THI_LAI_SA_HINH", "500000", "Phí thi lại sa hình");
             upsertConfig("THI_LAI_DUONG_TRUONG", "500000", "Phí thi lại đường trường");
+            upsertConfig(LeaveWorkflowConfig.CONFIG_KEY, defaultLeaveWorkflowConfig(), "Quy trình nghỉ phép theo quy định của trung tâm");
             upsertConfig(StudentService.SAT_HACH_INSTRUCTIONS_KEY, defaultSatHachInstructions(), "Hướng dẫn Thi Sát Hạch cho học viên");
         };
     }
@@ -137,6 +139,12 @@ public class DataInitializer {
                   <li>Mang CCCD/giấy tờ tùy thân hợp lệ và hồ sơ theo yêu cầu.</li>
                   <li>Tuân thủ hướng dẫn của cán bộ coi thi và giáo vụ thi.</li>
                 </ul>
+                """;
+    }
+
+    private String defaultLeaveWorkflowConfig() {
+        return """
+                {"maxTeachersOffPerDay":1,"minimumAdvanceDays":1,"maxConsecutiveDays":3,"requireReason":true,"approvalSteps":"Giáo viên gửi yêu cầu -> Quản lý khu vực kiểm tra lịch -> Duyệt hoặc từ chối","notes":"Không duyệt nếu đã có giáo viên khác nghỉ cùng ngày, trừ khi Giám đốc quyết định ngoài hệ thống."}
                 """;
     }
 

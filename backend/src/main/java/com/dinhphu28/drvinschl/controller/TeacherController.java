@@ -25,6 +25,8 @@ import com.dinhphu28.drvinschl.entity.SessionReport;
 import com.dinhphu28.drvinschl.entity.SessionType;
 import com.dinhphu28.drvinschl.entity.TrainingBooking;
 import com.dinhphu28.drvinschl.entity.VehicleLog;
+import com.dinhphu28.drvinschl.model.LeaveWorkflowConfig;
+import com.dinhphu28.drvinschl.service.LeaveWorkflowConfigService;
 import com.dinhphu28.drvinschl.service.TeacherService;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 @PreAuthorize("hasRole('GIAO_VIEN')")
 public class TeacherController {
     private final TeacherService teacherService;
+    private final LeaveWorkflowConfigService leaveWorkflowConfigService;
 
     @GetMapping("/schedule")
     public List<TrainingBooking> getSchedule(@AuthenticationPrincipal UserDetails userDetails) {
@@ -82,6 +85,11 @@ public class TeacherController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
             @RequestParam String reason) {
         return teacherService.requestLeave(userDetails.getUsername(), start, end, reason);
+    }
+
+    @GetMapping("/leave/workflow")
+    public LeaveWorkflowConfig getLeaveWorkflow() {
+        return leaveWorkflowConfigService.getConfig();
     }
 
     @PostMapping("/vehicles/{vehicleId}/departure")

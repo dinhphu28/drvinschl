@@ -29,6 +29,7 @@ public class AreaManagerService {
     private final SalaryRecordRepository salaryRecordRepository;
     private final VehicleRepository vehicleRepository;
     private final UserRepository userRepository;
+    private final LeaveWorkflowConfigService leaveWorkflowConfigService;
 
     public List<LeaveRequest> getPendingLeaveRequests() {
         return leaveRequestRepository.findByStatus(LeaveStatus.PENDING);
@@ -38,19 +39,11 @@ public class AreaManagerService {
     public LeaveRequest approveLeave(UUID requestId, boolean approved) {
         LeaveRequest request = leaveRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Leave request not found"));
-        if (approved && hasApprovedLeaveConflict(request)) {
-            throw new IllegalArgumentException("Another teacher already has approved leave on the same day");
+        if (approved) {
+            leaveWorkflowConfigService.validateApproval(request);
         }
         request.setStatus(approved ? LeaveStatus.APPROVED : LeaveStatus.REJECTED);
         return leaveRequestRepository.save(request);
-    }
-
-    private boolean hasApprovedLeaveConflict(LeaveRequest request) {
-        return leaveRequestRepository.findByStatus(LeaveStatus.APPROVED).stream()
-                .filter(existing -> !existing.getId().equals(request.getId()))
-                .filter(existing -> !existing.getTeacher().getId().equals(request.getTeacher().getId()))
-                .anyMatch(existing -> !existing.getEndDate().isBefore(request.getStartDate())
-                        && !existing.getStartDate().isAfter(request.getEndDate()));
     }
 
     public List<MaintenanceRecord> getPendingMaintenanceRequests() {

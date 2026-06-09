@@ -18,6 +18,14 @@ interface LeaveRequest {
   status: string;
   teacher: { firstName: string };
 }
+interface LeaveWorkflowConfig {
+  maxTeachersOffPerDay: number;
+  minimumAdvanceDays: number;
+  maxConsecutiveDays: number;
+  requireReason: boolean;
+  approvalSteps: string;
+  notes: string;
+}
 
 interface Vehicle {
   id: string;
@@ -51,68 +59,100 @@ interface Salary {
 
 const TabLeave = () => {
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [workflow, setWorkflow] = useState<LeaveWorkflowConfig | null>(null);
+  const [msg, setMsg] = useState("");
 
   useEffect(() => {
     api.get<LeaveRequest[]>("/area-manager/leave-requests").then((r) => setLeaves(r.data));
+    api.get<LeaveWorkflowConfig>("/area-manager/leave-workflow").then((r) => setWorkflow(r.data)).catch(() => setWorkflow(null));
   }, []);
 
   const handleApprove = (id: string, approved: boolean) => {
-    api.put(`/area-manager/leave-requests/${id}?approved=${approved}`).then(() => {
-      setLeaves((prev) => prev.map((l) =>
-        l.id === id ? { ...l, status: approved ? "APPROVED" : "REJECTED" } : l,
-      ));
-    });
+    api.put(`/area-manager/leave-requests/${id}?approved=${approved}`)
+      .then(() => {
+        setMsg(approved ? "Đã duyệt yêu cầu nghỉ phép" : "Đã từ chối yêu cầu nghỉ phép");
+        setLeaves((prev) => prev.map((l) =>
+          l.id === id ? { ...l, status: approved ? "APPROVED" : "REJECTED" } : l,
+        ));
+      })
+      .catch((err) => setMsg(err?.response?.data?.error || "Không thể xử lý yêu cầu nghỉ phép"));
   };
 
   return (
-    <Card className="content-card">
-      <CardHeader>Yêu cầu nghỉ phép ({leaves.length})</CardHeader>
-      <CardBody className="p-0">
-        {leaves.length === 0 ? (
-          <EmptyState message="Không có yêu cầu nghỉ phép nào" />
-        ) : (
-          <Table responsive hover className="mb-0">
-            <thead>
-              <tr>
-                <th>Giáo viên</th>
-                <th>Từ</th>
-                <th>Đến</th>
-                <th>Lý do</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaves.map((l) => (
-                <tr key={l.id}>
-                  <td>{l.teacher?.firstName}</td>
-                  <td>{l.startDate}</td>
-                  <td>{l.endDate}</td>
-                  <td>{l.reason}</td>
-                  <td><StatusBadge status={l.status} /></td>
-                  <td>
-                    <Button
-                      color="success" size="sm" className="me-1"
-                      disabled={l.status !== "PENDING"}
-                      onClick={() => handleApprove(l.id, true)}
-                    >
-                      Duyệt
-                    </Button>
-                    <Button
-                      color="danger" size="sm"
-                      disabled={l.status !== "PENDING"}
-                      onClick={() => handleApprove(l.id, false)}
-                    >
-                      Từ chối
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
-      </CardBody>
-    </Card>
+    <Row className="g-3">
+      <Col lg="4">
+        <Card className="content-card">
+          <CardHeader>Quy trình nghỉ phép</CardHeader>
+          <CardBody>
+            {workflow ? (
+              <>
+                <div className="small text-muted">GV nghỉ tối đa / ngày</div>
+                <div className="fw-semibold mb-2">{workflow.maxTeachersOffPerDay}</div>
+                <div className="small text-muted">Báo trước tối thiểu</div>
+                <div className="fw-semibold mb-2">{workflow.minimumAdvanceDays} ngày</div>
+                <div className="small text-muted">Nghỉ liên tiếp tối đa</div>
+                <div className="fw-semibold mb-2">{workflow.maxConsecutiveDays} ngày</div>
+                <div className="small text-muted">Các bước duyệt</div>
+                <div className="mb-2">{workflow.approvalSteps}</div>
+                <div className="small text-muted">Ghi chú</div>
+                <div>{workflow.notes}</div>
+              </>
+            ) : <EmptyState message="Chưa có quy trình" />}
+          </CardBody>
+        </Card>
+      </Col>
+      <Col lg="8">
+        <Card className="content-card">
+          <CardHeader>Yêu cầu nghỉ phép ({leaves.length})</CardHeader>
+          <CardBody className="p-0">
+            {leaves.length === 0 ? (
+              <EmptyState message="Không có yêu cầu nghỉ phép nào" />
+            ) : (
+              <Table responsive hover className="mb-0">
+                <thead>
+                  <tr>
+                    <th>Giáo viên</th>
+                    <th>Từ</th>
+                    <th>Đến</th>
+                    <th>Lý do</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaves.map((l) => (
+                    <tr key={l.id}>
+                      <td>{l.teacher?.firstName}</td>
+                      <td>{l.startDate}</td>
+                      <td>{l.endDate}</td>
+                      <td>{l.reason}</td>
+                      <td><StatusBadge status={l.status} /></td>
+                      <td>
+                        <Button
+                          color="success" size="sm" className="me-1"
+                          disabled={l.status !== "PENDING"}
+                          onClick={() => handleApprove(l.id, true)}
+                        >
+                          Duyệt
+                        </Button>
+                        <Button
+                          color="danger" size="sm"
+                          disabled={l.status !== "PENDING"}
+                          onClick={() => handleApprove(l.id, false)}
+                        >
+                          Từ chối
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+          </CardBody>
+        </Card>
+        {msg && <div className="alert alert-info" role="alert">{msg}</div>}
+      </Col>
+    </Row>
   );
 };
 

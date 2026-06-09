@@ -37,6 +37,14 @@ interface ScheduleDraft {
   location: string;
   notes: string;
 }
+interface LeaveWorkflowConfig {
+  maxTeachersOffPerDay: number;
+  minimumAdvanceDays: number;
+  maxConsecutiveDays: number;
+  requireReason: boolean;
+  approvalSteps: string;
+  notes: string;
+}
 
 const packageNameOptions = ["A", "A1", "B Số Sàn", "B Tự Động", "C1"];
 const adminSidebarItems = [
@@ -81,6 +89,7 @@ const configLabels = [...retakeFeeKeys, ...extraHourKeys].reduce<Record<string, 
   return acc;
 }, {});
 configLabels[satHachInstructionsKey] = "Hướng dẫn Thi Sát Hạch";
+configLabels.LEAVE_WORKFLOW_CONFIG = "Quy trình nghỉ phép";
 const scheduleModules = [
   { value: "LY_THUYET", label: "Lý thuyết" }, { value: "MO_PHONG", label: "Mô phỏng" },
 ];
@@ -110,6 +119,14 @@ const defaultSatHachInstructions = `<h3>Hướng dẫn Thi Sát Hạch</h3>
   <li>Mang CCCD/giấy tờ tùy thân hợp lệ và hồ sơ theo yêu cầu.</li>
   <li>Tuân thủ hướng dẫn của cán bộ coi thi và giáo vụ thi.</li>
 </ul>`;
+const defaultLeaveWorkflow: LeaveWorkflowConfig = {
+  maxTeachersOffPerDay: 1,
+  minimumAdvanceDays: 1,
+  maxConsecutiveDays: 3,
+  requireReason: true,
+  approvalSteps: "Giáo viên gửi yêu cầu -> Quản lý khu vực kiểm tra lịch -> Duyệt hoặc từ chối",
+  notes: "Không duyệt nếu đã có giáo viên khác nghỉ cùng ngày, trừ khi Giám đốc quyết định ngoài hệ thống.",
+};
 const roleEntries = [
   { value: "KINH_DOANH", label: "Kinh doanh" }, { value: "KE_TOAN", label: "Kế toán" },
   { value: "GIAO_VU_KHU_VUC", label: "Giáo vụ khu vực" }, { value: "GIAO_VU_SA_HINH", label: "Giáo vụ sa hình" },
@@ -126,7 +143,7 @@ const AdminPage = () => {
   const [configs, setConfigs] = useState<SystemConfig[]>([]);
   const [retakeForm, setRetakeForm] = useState({ key: "", value: "", description: "" });
   const [extraHourForm, setExtraHourForm] = useState({ key: "", value: "", description: "" });
-  const [leaveForm, setLeaveForm] = useState({ key: "", value: "", description: "" });
+  const [leaveWorkflow, setLeaveWorkflow] = useState<LeaveWorkflowConfig>(defaultLeaveWorkflow);
   const [satHachInstructions, setSatHachInstructions] = useState(defaultSatHachInstructions);
   const [scheduleForm, setScheduleForm] = useState<ScheduleDraft>(emptyScheduleDraft);
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -137,10 +154,12 @@ const AdminPage = () => {
   const flash = (m: string) => { setMessage(m); setTimeout(() => setMessage(""), 3000); };
   const loadPackages = () => api.get<CoursePackage[]>("/admin/course-packages").then((r) => setPackages(r.data));
   const loadConfigs = () => api.get<SystemConfig[]>("/admin/configs").then((r) => setConfigs(r.data));
+  const loadLeaveWorkflow = () => api.get<LeaveWorkflowConfig>("/admin/configs/leave-workflow").then((r) => setLeaveWorkflow(r.data));
   const loadUsers = () => api.get<UserRecord[]>("/admin/users").then((r) => setUsers(r.data)).catch(() => setUsers([]));
   const loadVehicles = () => api.get<VehicleRecord[]>("/vehicles").then((r) => setVehicles(r.data)).catch(() => setVehicles([]));
   useEffect(() => { loadPackages(); }, []);
   useEffect(() => { loadConfigs(); }, []);
+  useEffect(() => { loadLeaveWorkflow(); }, []);
   useEffect(() => { loadUsers(); }, []);
   useEffect(() => { loadVehicles(); }, []);
   useEffect(() => {
@@ -202,12 +221,18 @@ const AdminPage = () => {
       setExtraHourForm({ key: "", value: "", description: "" });
     } catch { flash("Đã xảy ra lỗi"); }
   };
-  const submitLeave = async (e: React.FormEvent) => {
+  const submitLeaveWorkflow = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.put("/admin/configs/leave-workflow", null, { params: { key: leaveForm.key, value: leaveForm.value, description: leaveForm.description } });
-      flash("Cập nhật quy trình thành công"); loadConfigs();
-      setLeaveForm({ key: "", value: "", description: "" });
+      const payload = {
+        ...leaveWorkflow,
+        maxTeachersOffPerDay: Number(leaveWorkflow.maxTeachersOffPerDay),
+        minimumAdvanceDays: Number(leaveWorkflow.minimumAdvanceDays),
+        maxConsecutiveDays: Number(leaveWorkflow.maxConsecutiveDays),
+      };
+      const res = await api.put<LeaveWorkflowConfig>("/admin/configs/leave-workflow/policy", payload);
+      setLeaveWorkflow(res.data);
+      flash("Cập nhật quy trình nghỉ phép thành công"); loadConfigs();
     } catch { flash("Đã xảy ra lỗi"); }
   };
   const submitSatHachInstructions = async (e: React.FormEvent) => {
@@ -284,6 +309,14 @@ const AdminPage = () => {
   const renderConfigValue = (config: SystemConfig) => {
     if (config.configKey === satHachInstructionsKey) {
       return "Rich text";
+    }
+    if (config.configKey === "LEAVE_WORKFLOW_CONFIG") {
+      try {
+        const parsed = JSON.parse(config.configValue) as LeaveWorkflowConfig;
+        return `Tối đa ${parsed.maxTeachersOffPerDay} GV nghỉ/ngày | Báo trước ${parsed.minimumAdvanceDays} ngày | Tối đa ${parsed.maxConsecutiveDays} ngày`;
+      } catch {
+        return "Quy trình nghỉ phép";
+      }
     }
     if (!config.configKey.startsWith("SCHEDULE_")) {
       return configLabels[config.configKey] && !Number.isNaN(Number(config.configValue))
@@ -543,13 +576,20 @@ const AdminPage = () => {
                     </CardBody>
                   </Card>
                   <Card className="content-card">
-                    <CardHeader>Quy trình</CardHeader>
+                    <CardHeader>Quy trình nghỉ phép</CardHeader>
                     <CardBody>
-                      <Form onSubmit={submitLeave}>
-                        <FormGroup><Label>Khóa</Label><Input value={leaveForm.key} onChange={(e) => setLeaveForm({ ...leaveForm, key: e.target.value })} required /></FormGroup>
-                        <FormGroup><Label>Giá trị</Label><Input value={leaveForm.value} onChange={(e) => setLeaveForm({ ...leaveForm, value: e.target.value })} required /></FormGroup>
-                        <FormGroup><Label>Mô tả</Label><Input value={leaveForm.description} onChange={(e) => setLeaveForm({ ...leaveForm, description: e.target.value })} /></FormGroup>
-                        <Button color="primary" type="submit">Lưu</Button>
+                      <Form onSubmit={submitLeaveWorkflow}>
+                        <Row>
+                          <Col md="4"><FormGroup><Label>GV nghỉ tối đa / ngày</Label><Input type="number" min={1} value={leaveWorkflow.maxTeachersOffPerDay} onChange={(e) => setLeaveWorkflow({ ...leaveWorkflow, maxTeachersOffPerDay: Number(e.target.value) })} required /></FormGroup></Col>
+                          <Col md="4"><FormGroup><Label>Báo trước tối thiểu (ngày)</Label><Input type="number" min={0} value={leaveWorkflow.minimumAdvanceDays} onChange={(e) => setLeaveWorkflow({ ...leaveWorkflow, minimumAdvanceDays: Number(e.target.value) })} required /></FormGroup></Col>
+                          <Col md="4"><FormGroup><Label>Số ngày nghỉ liên tiếp tối đa</Label><Input type="number" min={1} value={leaveWorkflow.maxConsecutiveDays} onChange={(e) => setLeaveWorkflow({ ...leaveWorkflow, maxConsecutiveDays: Number(e.target.value) })} required /></FormGroup></Col>
+                        </Row>
+                        <FormGroup check className="mb-3">
+                          <Label check><Input type="checkbox" checked={leaveWorkflow.requireReason} onChange={(e) => setLeaveWorkflow({ ...leaveWorkflow, requireReason: e.target.checked })} /> Bắt buộc nhập lý do</Label>
+                        </FormGroup>
+                        <FormGroup><Label>Các bước duyệt</Label><Input type="textarea" rows={2} value={leaveWorkflow.approvalSteps} onChange={(e) => setLeaveWorkflow({ ...leaveWorkflow, approvalSteps: e.target.value })} required /></FormGroup>
+                        <FormGroup><Label>Ghi chú quy định</Label><Input type="textarea" rows={3} value={leaveWorkflow.notes} onChange={(e) => setLeaveWorkflow({ ...leaveWorkflow, notes: e.target.value })} required /></FormGroup>
+                        <Button color="primary" type="submit">Lưu quy trình</Button>
                       </Form>
                     </CardBody>
                   </Card>

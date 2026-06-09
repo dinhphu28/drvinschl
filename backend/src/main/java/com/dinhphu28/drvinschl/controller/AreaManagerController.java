@@ -17,7 +17,9 @@ import com.dinhphu28.drvinschl.entity.LeaveRequest;
 import com.dinhphu28.drvinschl.entity.MaintenanceRecord;
 import com.dinhphu28.drvinschl.entity.SalaryRecord;
 import com.dinhphu28.drvinschl.entity.Vehicle;
+import com.dinhphu28.drvinschl.model.LeaveWorkflowConfig;
 import com.dinhphu28.drvinschl.service.AreaManagerService;
+import com.dinhphu28.drvinschl.service.LeaveWorkflowConfigService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,10 +29,16 @@ import lombok.RequiredArgsConstructor;
 @PreAuthorize("hasRole('QUAN_LY_KHU_VUC')")
 public class AreaManagerController {
     private final AreaManagerService areaManagerService;
+    private final LeaveWorkflowConfigService leaveWorkflowConfigService;
 
     @GetMapping("/leave-requests")
     public List<LeaveRequest> getPendingLeave() {
         return areaManagerService.getPendingLeaveRequests();
+    }
+
+    @GetMapping("/leave-workflow")
+    public LeaveWorkflowConfig getLeaveWorkflow() {
+        return leaveWorkflowConfigService.getConfig();
     }
 
     @PutMapping("/leave-requests/{id}")

@@ -15,6 +15,14 @@ interface Booking {
   student: { fullName: string };
   slot: { startTime: string; endTime?: string; sessionType: string; vehicle?: { id: string; licensePlate: string } };
 }
+interface LeaveWorkflowConfig {
+  maxTeachersOffPerDay: number;
+  minimumAdvanceDays: number;
+  maxConsecutiveDays: number;
+  requireReason: boolean;
+  approvalSteps: string;
+  notes: string;
+}
 
 const teacherSidebarItems = [
   { id: "schedule", label: "Lịch dạy" },
@@ -35,6 +43,7 @@ const TeacherPage = () => {
   const [returnForm, setReturnForm] = useState({ vehicleId: "", odoReturn: "", returnTime: "" });
   const [fuelForm, setFuelForm] = useState({ vehicleId: "", date: new Date().toISOString().slice(0, 10), liters: "", receiptUrl: "", amount: "" });
   const [leaveForm, setLeaveForm] = useState({ start: "", end: "", reason: "" });
+  const [leaveWorkflow, setLeaveWorkflow] = useState<LeaveWorkflowConfig | null>(null);
   const [maintenanceForm, setMaintenanceForm] = useState({ vehicleId: "", maintenanceDate: new Date().toISOString().slice(0, 10), description: "", cost: "" });
 
   const loadData = () => {
@@ -45,6 +54,9 @@ const TeacherPage = () => {
     api.get<Record<string, unknown>>("/teachers/dashboard-stats")
       .then((res) => setStats(res.data))
       .catch(() => setStats({}));
+    api.get<LeaveWorkflowConfig>("/teachers/leave/workflow")
+      .then((res) => setLeaveWorkflow(res.data))
+      .catch(() => setLeaveWorkflow(null));
   };
 
   useEffect(() => {
@@ -114,9 +126,13 @@ const TeacherPage = () => {
 
   const submitLeave = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api.post("/teachers/leave", null, { params: leaveForm });
-    setMessage("Đã gửi yêu cầu nghỉ phép");
-    setLeaveForm({ start: "", end: "", reason: "" });
+    try {
+      await api.post("/teachers/leave", null, { params: leaveForm });
+      setMessage("Đã gửi yêu cầu nghỉ phép");
+      setLeaveForm({ start: "", end: "", reason: "" });
+    } catch (err: any) {
+      setMessage(err?.response?.data?.error || "Không thể gửi yêu cầu nghỉ phép");
+    }
   };
 
   const submitMaintenance = async (e: React.FormEvent) => {
@@ -233,14 +249,37 @@ const TeacherPage = () => {
           )}
 
           {activeTab === "leave" && (
-            <Form onSubmit={submitLeave}>
-              <Row>
-                <Col md="4"><FormGroup><Label>Từ ngày</Label><Input type="date" value={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, start: e.target.value })} required /></FormGroup></Col>
-                <Col md="4"><FormGroup><Label>Đến ngày</Label><Input type="date" value={leaveForm.end} onChange={(e) => setLeaveForm({ ...leaveForm, end: e.target.value })} required /></FormGroup></Col>
-                <Col md="4"><FormGroup><Label>Lý do</Label><Input value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} required /></FormGroup></Col>
-              </Row>
-              <Button color="primary" type="submit">Gửi yêu cầu</Button>
-            </Form>
+            <Row className="g-3">
+              <Col lg="4">
+                <Card>
+                  <CardBody>
+                    <h6>Quy trình nghỉ phép</h6>
+                    {leaveWorkflow ? (
+                      <>
+                        <div className="small text-muted">GV nghỉ tối đa / ngày</div>
+                        <div className="fw-semibold mb-2">{leaveWorkflow.maxTeachersOffPerDay}</div>
+                        <div className="small text-muted">Báo trước tối thiểu</div>
+                        <div className="fw-semibold mb-2">{leaveWorkflow.minimumAdvanceDays} ngày</div>
+                        <div className="small text-muted">Nghỉ liên tiếp tối đa</div>
+                        <div className="fw-semibold mb-2">{leaveWorkflow.maxConsecutiveDays} ngày</div>
+                        <div className="small text-muted">Ghi chú</div>
+                        <div>{leaveWorkflow.notes}</div>
+                      </>
+                    ) : <EmptyState message="Chưa có quy trình" />}
+                  </CardBody>
+                </Card>
+              </Col>
+              <Col lg="8">
+                <Form onSubmit={submitLeave}>
+                  <Row>
+                    <Col md="4"><FormGroup><Label>Từ ngày</Label><Input type="date" value={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, start: e.target.value })} required /></FormGroup></Col>
+                    <Col md="4"><FormGroup><Label>Đến ngày</Label><Input type="date" value={leaveForm.end} onChange={(e) => setLeaveForm({ ...leaveForm, end: e.target.value })} required /></FormGroup></Col>
+                    <Col md="4"><FormGroup><Label>Lý do</Label><Input value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} required={leaveWorkflow?.requireReason ?? true} /></FormGroup></Col>
+                  </Row>
+                  <Button color="primary" type="submit">Gửi yêu cầu</Button>
+                </Form>
+              </Col>
+            </Row>
           )}
 
           {activeTab === "maintenance" && (

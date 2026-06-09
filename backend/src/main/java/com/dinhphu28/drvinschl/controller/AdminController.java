@@ -20,6 +20,7 @@ import com.dinhphu28.drvinschl.entity.CoursePackage;
 import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.model.CreateUserRequest;
+import com.dinhphu28.drvinschl.model.LeaveWorkflowConfig;
 import com.dinhphu28.drvinschl.model.RichTextConfigRequest;
 import com.dinhphu28.drvinschl.model.TheoryScheduleRequest;
 import com.dinhphu28.drvinschl.model.UserProfileResponse;
@@ -96,6 +97,16 @@ public class AdminController {
             @RequestParam String value,
             @RequestParam(required = false) String description) {
         return adminService.configureLeaveWorkflow(key, value, description);
+    }
+
+    @GetMapping("/configs/leave-workflow")
+    public LeaveWorkflowConfig getLeaveWorkflowConfig() {
+        return adminService.getLeaveWorkflowConfig();
+    }
+
+    @PutMapping("/configs/leave-workflow/policy")
+    public LeaveWorkflowConfig saveLeaveWorkflowConfig(@RequestBody LeaveWorkflowConfig config) {
+        return adminService.saveLeaveWorkflowConfig(config);
     }
 
     @PutMapping("/course-packages/{id}")
