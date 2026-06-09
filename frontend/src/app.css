@@ -33,14 +33,36 @@
   padding: 0.75rem 0;
 }
 
+.app-sidebar-section-label {
+  padding: 0.7rem 1.5rem 0.35rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.app-sidebar-route-label {
+  margin-top: 0.45rem;
+}
+
 .app-sidebar-link {
   display: block;
+  width: 100%;
   padding: 0.65rem 1.5rem;
   color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   font-size: 0.95rem;
   border-left: 3px solid transparent;
   transition: background 0.15s, border-color 0.15s;
+}
+
+.app-sidebar-button {
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: transparent;
+  text-align: left;
 }
 
 .app-sidebar-link:hover {
@@ -201,6 +223,63 @@
   cursor: pointer;
 }
 
+.rich-text-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.rich-text-toolbar .btn {
+  min-width: 40px;
+  font-weight: 700;
+}
+
+.rich-text-preview,
+.rich-text-content {
+  border: 1px solid #e6e9ef;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fff;
+  min-height: 120px;
+  overflow-wrap: anywhere;
+}
+
+.rich-text-content {
+  border: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+.rich-text-preview h1,
+.rich-text-preview h2,
+.rich-text-preview h3,
+.rich-text-content h1,
+.rich-text-content h2,
+.rich-text-content h3 {
+  font-size: 1.05rem;
+  margin: 0 0 0.75rem;
+}
+
+.rich-text-preview p,
+.rich-text-preview ul,
+.rich-text-preview ol,
+.rich-text-content p,
+.rich-text-content ul,
+.rich-text-content ol {
+  margin-bottom: 0.75rem;
+}
+
+.rich-text-inline {
+  max-width: 280px;
+  overflow-wrap: anywhere;
+}
+
+.rich-text-inline p,
+.rich-text-inline ul,
+.rich-text-inline ol {
+  margin-bottom: 0.25rem;
+}
+
 @media (max-width: 768px) {
   .app-layout {
     display: block;
@@ -230,6 +309,7 @@
     gap: 0.4rem;
     overflow-x: auto;
     padding: 0 1rem 0.75rem;
+    align-items: center;
   }
 
   .app-sidebar-link {
@@ -240,9 +320,18 @@
     background: rgba(255, 255, 255, 0.08);
   }
 
+  .app-sidebar-button {
+    width: auto;
+    text-align: center;
+  }
+
   .app-sidebar-link.active {
     border-left: 0;
     background: rgba(255, 255, 255, 0.2);
+  }
+
+  .app-sidebar-section-label {
+    display: none;
   }
 
   .app-sidebar-footer {

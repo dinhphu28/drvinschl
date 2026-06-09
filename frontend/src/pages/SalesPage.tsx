@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
-  Card, CardBody, CardHeader, Table, Button,
-  Form, FormGroup, Label, Input, Row, Col, TabContent, TabPane, Nav, NavLink,
+  Card, CardBody, Table, Button,
+  Form, FormGroup, Label, Input, Row, Col, TabContent, TabPane,
 } from "reactstrap";
 import AppLayout from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
@@ -16,6 +16,13 @@ interface Student {
   coursePackage: string;
   courseStatus: string;
 }
+
+const salesSidebarItems = [
+  { id: "1", label: "Học viên" },
+  { id: "2", label: "Hợp đồng" },
+  { id: "3", label: "Hồ sơ" },
+  { id: "4", label: "Hoa hồng" },
+];
 
 interface Contract {
   id: string;
@@ -145,36 +152,13 @@ const SalesPage = () => {
   };
 
   return (
-    <AppLayout title="Kinh doanh">
+    <AppLayout
+      title="Kinh doanh"
+      sidebarItems={salesSidebarItems}
+      activeSidebarItem={activeTab}
+      onSidebarItemClick={toggleTab}
+    >
       <Card className="content-card">
-        <CardHeader tag="div">
-          <Nav tabs>
-            <NavLink
-              className={activeTab === "1" ? "active" : ""}
-              onClick={() => toggleTab("1")}
-            >
-              Học viên
-            </NavLink>
-            <NavLink
-              className={activeTab === "2" ? "active" : ""}
-              onClick={() => toggleTab("2")}
-            >
-              Hợp đồng
-            </NavLink>
-            <NavLink
-              className={activeTab === "3" ? "active" : ""}
-              onClick={() => toggleTab("3")}
-            >
-              Hồ sơ
-            </NavLink>
-            <NavLink
-              className={activeTab === "4" ? "active" : ""}
-              onClick={() => toggleTab("4")}
-            >
-              Hoa hồng
-            </NavLink>
-          </Nav>
-        </CardHeader>
         <CardBody>
           <TabContent activeTab={activeTab}>
 

@@ -27,6 +27,8 @@ export const cancelStudentBooking = (bookingId: string) =>
 export const rateStudentTeacher = (bookingId: string, rating: number, comment: string) =>
   api.post(`/students/bookings/${bookingId}/rate`, { rating, comment });
 export const getStudentExams = () => api.get("/students/exams");
+export const getSatHachInstructions = () =>
+  api.get<{ key: string; content: string }>("/students/exams/sat-hach-instructions");
 export type ExamRetakePart =
   | "LY_THUYET"
   | "MO_PHONG"

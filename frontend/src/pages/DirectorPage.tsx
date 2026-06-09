@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, CardBody, CardHeader, Col, Nav, NavItem, NavLink, Row, Table, TabContent, TabPane, Badge, Button } from "reactstrap";
+import { Card, CardBody, CardHeader, Col, Row, Table, TabContent, TabPane, Badge, Button } from "reactstrap";
 import AppLayout from "../components/AppLayout";
 import StatCard from "../components/StatCard";
 import api from "../api/axios";
@@ -32,6 +32,12 @@ const examTypeLabels: Record<string, string> = {
   TOT_NGHIEP: "Thi tốt nghiệp", SAT_HACH: "Thi sát hạch",
   LY_THUYET: "Lý thuyết", MO_PHONG: "Mô phỏng", SA_HINH: "Sa hình", DUONG_TRUONG: "Đường trường",
 };
+const directorSidebarItems = [
+  { id: "1", label: "Tổng quan" },
+  { id: "2", label: "Thi sát hạch" },
+  { id: "3", label: "Hoàn thành khóa" },
+  { id: "4", label: "Duyệt lương" },
+];
 const DirectorPage = () => {
   const [activeTab, setActiveTab] = useState("1");
   const [message, setMessage] = useState("");
@@ -67,16 +73,15 @@ const DirectorPage = () => {
     } catch { flash("Không thể duyệt lương"); }
   };
   return (
-    <AppLayout title="Giám đốc — Tổng quan">
+    <AppLayout
+      title="Giám đốc - Tổng quan"
+      sidebarItems={directorSidebarItems}
+      activeSidebarItem={activeTab}
+      onSidebarItemClick={toggle}
+    >
       {message && <div className={`alert ${message.startsWith("Không") ? "alert-danger" : "alert-success"} alert-dismissible fade show mt-2`}>{message}</div>}
-      <Card className="mb-4">
-        <CardBody className="py-2">
-          <Nav tabs>
-            <NavItem><NavLink className={activeTab === "1" ? "active" : ""} onClick={() => toggle("1")}>Tổng quan</NavLink></NavItem>
-            <NavItem><NavLink className={activeTab === "2" ? "active" : ""} onClick={() => toggle("2")}>Thi sát hạch</NavLink></NavItem>
-            <NavItem><NavLink className={activeTab === "3" ? "active" : ""} onClick={() => toggle("3")}>Hoàn thành khóa</NavLink></NavItem>
-            <NavItem><NavLink className={activeTab === "4" ? "active" : ""} onClick={() => toggle("4")}>Duyệt lương</NavLink></NavItem>
-          </Nav>
+      <Card className="content-card">
+        <CardBody>
           <TabContent activeTab={activeTab}>
             <TabPane tabId="1">
               <Row>

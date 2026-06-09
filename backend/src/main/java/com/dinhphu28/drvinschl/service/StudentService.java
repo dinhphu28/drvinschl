@@ -17,6 +17,7 @@ import com.dinhphu28.drvinschl.entity.StudentCourseEnrollment;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
 import com.dinhphu28.drvinschl.model.LearningProgressResponse;
+import com.dinhphu28.drvinschl.model.RichTextConfigResponse;
 import com.dinhphu28.drvinschl.model.StudentCourseEnrollmentResponse;
 import com.dinhphu28.drvinschl.model.StudentProfileResponse;
 import com.dinhphu28.drvinschl.model.UpdateStudentProfileRequest;
@@ -32,6 +33,16 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class StudentService {
+    public static final String SAT_HACH_INSTRUCTIONS_KEY = "SAT_HACH_INSTRUCTIONS_RICH_TEXT";
+    private static final String DEFAULT_SAT_HACH_INSTRUCTIONS = """
+            <h3>Hướng dẫn Thi Sát Hạch</h3>
+            <p>Học viên theo dõi lịch thi, giấy tờ cần mang theo và yêu cầu dự thi theo thông báo mới nhất của trung tâm.</p>
+            <ul>
+              <li>Có mặt đúng giờ theo lịch thi được phân công.</li>
+              <li>Mang CCCD/giấy tờ tùy thân hợp lệ và hồ sơ theo yêu cầu.</li>
+              <li>Tuân thủ hướng dẫn của cán bộ coi thi và giáo vụ thi.</li>
+            </ul>
+            """;
     private final StudentRepository studentRepository;
     private final LearningProgressRepository learningProgressRepository;
     private final PaymentRecordRepository paymentRecordRepository;
@@ -160,6 +171,13 @@ public class StudentService {
     public List<ExtraRegistration> getExtraRegistrations(String username) {
         Student student = userContextService.requireStudent(username);
         return extraRegistrationRepository.findByStudent(student);
+    }
+
+    public RichTextConfigResponse getSatHachInstructions() {
+        String content = systemConfigRepository.findByConfigKey(SAT_HACH_INSTRUCTIONS_KEY)
+                .map(config -> config.getConfigValue())
+                .orElse(DEFAULT_SAT_HACH_INSTRUCTIONS);
+        return new RichTextConfigResponse(SAT_HACH_INSTRUCTIONS_KEY, content);
     }
 
     private StudentProfileResponse toProfileResponse(Student student) {

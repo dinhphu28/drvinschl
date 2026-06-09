@@ -25,6 +25,7 @@ import com.dinhphu28.drvinschl.entity.TrainingSlot;
 import com.dinhphu28.drvinschl.model.BookSlotRequest;
 import com.dinhphu28.drvinschl.model.LearningProgressResponse;
 import com.dinhphu28.drvinschl.model.RateTeacherRequest;
+import com.dinhphu28.drvinschl.model.RichTextConfigResponse;
 import com.dinhphu28.drvinschl.model.StudentProfileResponse;
 import com.dinhphu28.drvinschl.model.UpdateStudentProfileRequest;
 import com.dinhphu28.drvinschl.service.ExamService;
@@ -101,6 +102,12 @@ public class StudentController {
     public List<com.dinhphu28.drvinschl.entity.ExamRegistration> getExams(
             @AuthenticationPrincipal UserDetails userDetails) {
         return examService.getStudentExams(userDetails.getUsername());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/exams/sat-hach-instructions")
+    public RichTextConfigResponse getSatHachInstructions() {
+        return studentService.getSatHachInstructions();
     }
 
     @PreAuthorize("isAuthenticated()")

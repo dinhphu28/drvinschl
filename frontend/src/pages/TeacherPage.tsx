@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Alert, Button, Card, CardBody, CardHeader, Col, Form, FormGroup,
-  Input, Label, Nav, NavLink, Row, Table,
+  Alert, Button, Card, CardBody, Col, Form, FormGroup,
+  Input, Label, Row, Table,
 } from "reactstrap";
 import AppLayout from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
@@ -15,6 +15,14 @@ interface Booking {
   student: { fullName: string };
   slot: { startTime: string; endTime?: string; sessionType: string; vehicle?: { id: string; licensePlate: string } };
 }
+
+const teacherSidebarItems = [
+  { id: "schedule", label: "Lịch dạy" },
+  { id: "report", label: "Báo cáo buổi học" },
+  { id: "vehicle", label: "Xe & xăng" },
+  { id: "leave", label: "Nghỉ phép" },
+  { id: "maintenance", label: "Bảo dưỡng" },
+];
 
 const TeacherPage = () => {
   const [activeTab, setActiveTab] = useState("schedule");
@@ -125,7 +133,12 @@ const TeacherPage = () => {
   };
 
   return (
-    <AppLayout title="Giáo viên">
+    <AppLayout
+      title="Giáo viên"
+      sidebarItems={teacherSidebarItems}
+      activeSidebarItem={activeTab}
+      onSidebarItemClick={setActiveTab}
+    >
       {message && <Alert color="success" dismissible onClose={() => setMessage("")}>{message}</Alert>}
       <Card className="content-card mb-3">
         <CardBody>
@@ -139,15 +152,6 @@ const TeacherPage = () => {
       </Card>
 
       <Card className="content-card">
-        <CardHeader>
-          <Nav tabs>
-            <NavLink className={activeTab === "schedule" ? "active" : ""} onClick={() => setActiveTab("schedule")}>Lịch dạy</NavLink>
-            <NavLink className={activeTab === "report" ? "active" : ""} onClick={() => setActiveTab("report")}>Báo cáo buổi học</NavLink>
-            <NavLink className={activeTab === "vehicle" ? "active" : ""} onClick={() => setActiveTab("vehicle")}>Xe & xăng</NavLink>
-            <NavLink className={activeTab === "leave" ? "active" : ""} onClick={() => setActiveTab("leave")}>Nghỉ phép</NavLink>
-            <NavLink className={activeTab === "maintenance" ? "active" : ""} onClick={() => setActiveTab("maintenance")}>Bảo dưỡng</NavLink>
-          </Nav>
-        </CardHeader>
         <CardBody>
           {activeTab === "schedule" && (
             loading ? <EmptyState message="Đang tải..." /> : schedule.length === 0 ? <EmptyState message="Chưa có buổi dạy nào được phân công." /> : (

@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Badge, Button, Card, CardBody, CardHeader, Col, Form, FormGroup,
-  Input, Label, Nav, NavItem, NavLink, Row, Table, TabContent, TabPane,
+  Input, Label, Row, Table, TabContent, TabPane,
 } from "reactstrap";
 import AppLayout from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
 import api from "../api/axios";
+import { sanitizeRichText } from "../utils/richText";
 
 interface CoursePackage {
   id: string; name: string; price: number;
@@ -38,6 +39,12 @@ interface ScheduleDraft {
 }
 
 const packageNameOptions = ["A", "A1", "B Số Sàn", "B Tự Động", "C1"];
+const adminSidebarItems = [
+  { id: "1", label: "Gói học" },
+  { id: "2", label: "Cấu hình hệ thống" },
+  { id: "3", label: "Quản lý người dùng" },
+  { id: "4", label: "Quản lý xe" },
+];
 const emptyPkg = {
   name: "B Số Sàn",
   price: 0,
@@ -68,10 +75,12 @@ const extraHourKeys = [
   { value: "GIA_GIO_SA_HINH_CAM_UNG_TAP", label: "Sa hình cảm ứng tập" },
   { value: "GIA_GIO_SA_HINH_CAM_UNG_THI", label: "Sa hình cảm ứng thi" },
 ];
+const satHachInstructionsKey = "SAT_HACH_INSTRUCTIONS_RICH_TEXT";
 const configLabels = [...retakeFeeKeys, ...extraHourKeys].reduce<Record<string, string>>((acc, item) => {
   acc[item.value] = item.label;
   return acc;
 }, {});
+configLabels[satHachInstructionsKey] = "Hướng dẫn Thi Sát Hạch";
 const scheduleModules = [
   { value: "LY_THUYET", label: "Lý thuyết" }, { value: "MO_PHONG", label: "Mô phỏng" },
 ];
@@ -94,6 +103,13 @@ const emptyVehicleForm = {
   currentOdo: "0",
   active: true,
 };
+const defaultSatHachInstructions = `<h3>Hướng dẫn Thi Sát Hạch</h3>
+<p>Học viên theo dõi lịch thi, giấy tờ cần mang theo và yêu cầu dự thi theo thông báo mới nhất của trung tâm.</p>
+<ul>
+  <li>Có mặt đúng giờ theo lịch thi được phân công.</li>
+  <li>Mang CCCD/giấy tờ tùy thân hợp lệ và hồ sơ theo yêu cầu.</li>
+  <li>Tuân thủ hướng dẫn của cán bộ coi thi và giáo vụ thi.</li>
+</ul>`;
 const roleEntries = [
   { value: "KINH_DOANH", label: "Kinh doanh" }, { value: "KE_TOAN", label: "Kế toán" },
   { value: "GIAO_VU_KHU_VUC", label: "Giáo vụ khu vực" }, { value: "GIAO_VU_SA_HINH", label: "Giáo vụ sa hình" },
@@ -101,6 +117,7 @@ const roleEntries = [
   { value: "QUAN_LY_KHU_VUC", label: "Quản lý khu vực" }, { value: "GIAM_DOC", label: "Giám đốc" }, { value: "ADMIN", label: "Admin" },
 ];
 const AdminPage = () => {
+  const instructionsRef = useRef<HTMLTextAreaElement | null>(null);
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState("1");
   const [packages, setPackages] = useState<CoursePackage[]>([]);
@@ -110,6 +127,7 @@ const AdminPage = () => {
   const [retakeForm, setRetakeForm] = useState({ key: "", value: "", description: "" });
   const [extraHourForm, setExtraHourForm] = useState({ key: "", value: "", description: "" });
   const [leaveForm, setLeaveForm] = useState({ key: "", value: "", description: "" });
+  const [satHachInstructions, setSatHachInstructions] = useState(defaultSatHachInstructions);
   const [scheduleForm, setScheduleForm] = useState<ScheduleDraft>(emptyScheduleDraft);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [newUser, setNewUser] = useState({ username: "", email: "", firstName: "", lastName: "", password: "", role: "KINH_DOANH" });
@@ -125,6 +143,12 @@ const AdminPage = () => {
   useEffect(() => { loadConfigs(); }, []);
   useEffect(() => { loadUsers(); }, []);
   useEffect(() => { loadVehicles(); }, []);
+  useEffect(() => {
+    const config = configs.find((item) => item.configKey === satHachInstructionsKey);
+    if (config?.configValue) {
+      setSatHachInstructions(config.configValue);
+    }
+  }, [configs]);
   const toggle = (t: string) => { if (activeTab !== t) setActiveTab(t); };
   const startEditPkg = (p: CoursePackage) => {
     setPkgForm({
@@ -186,6 +210,39 @@ const AdminPage = () => {
       setLeaveForm({ key: "", value: "", description: "" });
     } catch { flash("Đã xảy ra lỗi"); }
   };
+  const submitSatHachInstructions = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.put(`/admin/configs/${satHachInstructionsKey}/rich-text`, {
+        content: sanitizeRichText(satHachInstructions),
+        description: "Hướng dẫn Thi Sát Hạch cho học viên",
+      });
+      flash("Cập nhật hướng dẫn Thi Sát Hạch thành công");
+      loadConfigs();
+    } catch { flash("Đã xảy ra lỗi"); }
+  };
+  const wrapInstructionSelection = (before: string, after = before) => {
+    const textarea = instructionsRef.current;
+    if (!textarea) {
+      setSatHachInstructions((current) => `${current}${before}${after}`);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const fallbackText = "Nội dung";
+    const selected = satHachInstructions.slice(start, end);
+    const replacement = `${before}${selected || fallbackText}${after}`;
+    const next = `${satHachInstructions.slice(0, start)}${replacement}${satHachInstructions.slice(end)}`;
+    setSatHachInstructions(next);
+    window.setTimeout(() => {
+      textarea.focus();
+      const selectionStart = start + before.length;
+      textarea.setSelectionRange(selectionStart, selectionStart + (selected || fallbackText).length);
+    }, 0);
+  };
+  const insertInstructionBlock = (html: string) => {
+    setSatHachInstructions((current) => `${current.trim()}\n${html}`.trim());
+  };
   const submitSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -225,6 +282,9 @@ const AdminPage = () => {
     setScheduleForm((prev) => ({ ...prev, ...template }));
   };
   const renderConfigValue = (config: SystemConfig) => {
+    if (config.configKey === satHachInstructionsKey) {
+      return "Rich text";
+    }
     if (!config.configKey.startsWith("SCHEDULE_")) {
       return configLabels[config.configKey] && !Number.isNaN(Number(config.configValue))
         ? `${Number(config.configValue).toLocaleString("vi-VN")} đ`
@@ -268,16 +328,15 @@ const AdminPage = () => {
     } catch { flash("Không thể tạo xe"); }
   };
   return (
-    <AppLayout title="Quản trị hệ thống">
+    <AppLayout
+      title="Quản trị hệ thống"
+      sidebarItems={adminSidebarItems}
+      activeSidebarItem={activeTab}
+      onSidebarItemClick={toggle}
+    >
       {message && <div className={`alert ${message.startsWith("Không") ? "alert-danger" : "alert-success"} alert-dismissible fade show mt-2`}>{message}</div>}
-      <Card className="mb-4">
-        <CardBody className="py-2">
-          <Nav tabs>
-            <NavItem><NavLink className={activeTab === "1" ? "active" : ""} onClick={() => toggle("1")}>Gói học</NavLink></NavItem>
-            <NavItem><NavLink className={activeTab === "2" ? "active" : ""} onClick={() => toggle("2")}>Cấu hình hệ thống</NavLink></NavItem>
-            <NavItem><NavLink className={activeTab === "3" ? "active" : ""} onClick={() => toggle("3")}>Quản lý người dùng</NavLink></NavItem>
-            <NavItem><NavLink className={activeTab === "4" ? "active" : ""} onClick={() => toggle("4")}>Quản lý xe</NavLink></NavItem>
-          </Nav>
+      <Card className="content-card">
+        <CardBody>
           <TabContent activeTab={activeTab}>
             <TabPane tabId="1">
               <Row>
@@ -491,6 +550,40 @@ const AdminPage = () => {
                         <FormGroup><Label>Giá trị</Label><Input value={leaveForm.value} onChange={(e) => setLeaveForm({ ...leaveForm, value: e.target.value })} required /></FormGroup>
                         <FormGroup><Label>Mô tả</Label><Input value={leaveForm.description} onChange={(e) => setLeaveForm({ ...leaveForm, description: e.target.value })} /></FormGroup>
                         <Button color="primary" type="submit">Lưu</Button>
+                      </Form>
+                    </CardBody>
+                  </Card>
+                  <Card className="content-card">
+                    <CardHeader>Hướng dẫn Thi Sát Hạch</CardHeader>
+                    <CardBody>
+                      <Form onSubmit={submitSatHachInstructions}>
+                        <div className="rich-text-toolbar mb-2">
+                          <Button type="button" color="light" size="sm" onClick={() => wrapInstructionSelection("<strong>", "</strong>")}>B</Button>
+                          <Button type="button" color="light" size="sm" onClick={() => wrapInstructionSelection("<em>", "</em>")}>I</Button>
+                          <Button type="button" color="light" size="sm" onClick={() => wrapInstructionSelection("<h3>", "</h3>")}>H3</Button>
+                          <Button type="button" color="light" size="sm" onClick={() => wrapInstructionSelection("<p>", "</p>")}>P</Button>
+                          <Button type="button" color="light" size="sm" onClick={() => insertInstructionBlock("<ul>\n  <li>Nội dung</li>\n</ul>")}>UL</Button>
+                          <Button type="button" color="light" size="sm" onClick={() => insertInstructionBlock("<ol>\n  <li>Nội dung</li>\n</ol>")}>OL</Button>
+                        </div>
+                        <FormGroup>
+                          <Label>Nội dung rich text</Label>
+                          <Input
+                            innerRef={instructionsRef}
+                            type="textarea"
+                            rows={10}
+                            value={satHachInstructions}
+                            onChange={(e) => setSatHachInstructions(e.target.value)}
+                            required
+                          />
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>Xem trước cho học viên</Label>
+                          <div
+                            className="rich-text-preview"
+                            dangerouslySetInnerHTML={{ __html: sanitizeRichText(satHachInstructions) }}
+                          />
+                        </FormGroup>
+                        <Button color="primary" type="submit">Lưu hướng dẫn</Button>
                       </Form>
                     </CardBody>
                   </Card>

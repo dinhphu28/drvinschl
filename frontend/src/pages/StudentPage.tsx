@@ -30,6 +30,7 @@ import {
   getStudentPayments,
   getStudentProgress,
   getStudentProfile,
+  getSatHachInstructions,
   rateStudentTeacher,
   registerStudentExtra,
   registerStudentRetake,
@@ -38,6 +39,7 @@ import {
   type StudentExtraType,
   type StudentSessionType,
 } from "../api/student";
+import { sanitizeRichText } from "../utils/richText";
 
 interface StudentProfile {
   id: string;
@@ -169,6 +171,13 @@ const progressModules = [
 
 type ProgressModule = (typeof progressModules)[number];
 
+const studentSidebarItems = [
+  { id: "1", label: "Tiến độ" },
+  { id: "2", label: "Đặt lịch" },
+  { id: "3", label: "Học phí" },
+  { id: "4", label: "Thi Sát Hạch" },
+];
+
 const paymentLabels: Record<string, string> = {
   HOC_PHI: "Học phí",
   HOC_THEM: "Học thêm",
@@ -202,6 +211,7 @@ const StudentPage = () => {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [exams, setExams] = useState<ExamRegistration[]>([]);
+  const [satHachInstructions, setSatHachInstructions] = useState("");
   const [extras, setExtras] = useState<ExtraRegistration[]>([]);
   const [sessionType, setSessionType] = useState<StudentSessionType>("CO_BAN_4H");
   const [ratingBookingId, setRatingBookingId] = useState("");
@@ -218,6 +228,7 @@ const StudentPage = () => {
     getStudentPayments().then((r) => setPayments(asArray<PaymentItem>(r.data))).catch(() => setPayments([]));
     getStudentBookings().then((r) => setBookings(asArray<Booking>(r.data))).catch(() => setBookings([]));
     getStudentExams().then((r) => setExams(asArray<ExamRegistration>(r.data))).catch(() => setExams([]));
+    getSatHachInstructions().then((r) => setSatHachInstructions(r.data.content || "")).catch(() => setSatHachInstructions(""));
     getStudentExtraRegistrations().then((r) => setExtras(asArray<ExtraRegistration>(r.data))).catch(() => setExtras([]));
   };
 
@@ -331,7 +342,12 @@ const StudentPage = () => {
   };
 
   return (
-    <AppLayout title="Học viên">
+    <AppLayout
+      title="Học viên"
+      sidebarItems={studentSidebarItems}
+      activeSidebarItem={activeTab}
+      onSidebarItemClick={setActiveTab}
+    >
       <div className="student-page">
         {message && <div className="alert alert-success alert-dismissible fade show mt-2">{message}</div>}
         <Row className="g-3 mb-4">
@@ -426,12 +442,6 @@ const StudentPage = () => {
 
         <Card className="content-card student-workspace-card">
           <CardBody className="py-2">
-            <Nav tabs className="student-tabs">
-              <NavLink className={activeTab === "1" ? "active" : ""} onClick={() => setActiveTab("1")}>Tiến độ</NavLink>
-              <NavLink className={activeTab === "2" ? "active" : ""} onClick={() => setActiveTab("2")}>Đặt lịch</NavLink>
-              <NavLink className={activeTab === "3" ? "active" : ""} onClick={() => setActiveTab("3")}>Học phí</NavLink>
-              <NavLink className={activeTab === "4" ? "active" : ""} onClick={() => setActiveTab("4")}>Thi</NavLink>
-            </Nav>
             <TabContent activeTab={activeTab}>
             <TabPane tabId="1">
               <Card className="mt-3">
@@ -676,6 +686,21 @@ const StudentPage = () => {
 
             <TabPane tabId="4">
               <Row className="mt-3 g-3">
+                <Col lg="4">
+                  <Card>
+                    <CardHeader>Hướng dẫn Thi Sát Hạch</CardHeader>
+                    <CardBody>
+                      {satHachInstructions ? (
+                        <div
+                          className="rich-text-content"
+                          dangerouslySetInnerHTML={{ __html: sanitizeRichText(satHachInstructions) }}
+                        />
+                      ) : (
+                        <EmptyState message="Chưa có hướng dẫn" />
+                      )}
+                    </CardBody>
+                  </Card>
+                </Col>
                 <Col lg="8">
                   <Card>
                     <CardHeader>Lịch thi và kết quả</CardHeader>
@@ -698,7 +723,14 @@ const StudentPage = () => {
                               <tr key={exam.id}>
                                 <td data-label="Loại">{examLabels[exam.examSession.examType] ?? exam.examSession.examType}</td>
                                 <td data-label="Ngày thi">{new Date(exam.examSession.examDate).toLocaleString("vi-VN")}</td>
-                                <td data-label="Hướng dẫn">{exam.examSession.instructions || "—"}</td>
+                                <td data-label="Hướng dẫn">
+                                  {exam.examSession.instructions ? (
+                                    <div
+                                      className="rich-text-inline"
+                                      dangerouslySetInnerHTML={{ __html: sanitizeRichText(exam.examSession.instructions) }}
+                                    />
+                                  ) : "—"}
+                                </td>
                                 <td data-label="Kết quả">{exam.passed == null ? "Chưa có" : exam.passed ? "Đạt" : "Không đạt"}</td>
                                 <td data-label="" className="text-end">
                                   {exam.passed === false && !exam.retake && (

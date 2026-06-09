@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ import com.dinhphu28.drvinschl.entity.CoursePackage;
 import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.model.CreateUserRequest;
+import com.dinhphu28.drvinschl.model.RichTextConfigRequest;
 import com.dinhphu28.drvinschl.model.TheoryScheduleRequest;
 import com.dinhphu28.drvinschl.model.UserProfileResponse;
 import com.dinhphu28.drvinschl.service.AdminService;
@@ -63,6 +65,13 @@ public class AdminController {
             @RequestParam String value,
             @RequestParam(required = false) String description) {
         return adminService.upsertConfig(key, value, description);
+    }
+
+    @PutMapping(value = "/configs/{key}/rich-text", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public SystemConfig upsertRichTextConfig(
+            @PathVariable String key,
+            @RequestBody RichTextConfigRequest request) {
+        return adminService.upsertConfig(key, request.content(), request.description());
     }
 
     @PutMapping("/configs/retake-fee")
