@@ -41,13 +41,13 @@ public class StudentController {
     private final SchedulingService schedulingService;
     private final ExamService examService;
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/profile")
     public StudentProfileResponse getProfile(@AuthenticationPrincipal UserDetails userDetails) {
         return studentService.getProfile(userDetails.getUsername());
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @PutMapping(value = "/profile", consumes = MediaType.APPLICATION_JSON_VALUE)
     public void updateProfile(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -55,25 +55,25 @@ public class StudentController {
         studentService.upsertProfile(userDetails.getUsername(), request);
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/progress")
     public List<LearningProgressResponse> getProgress(@AuthenticationPrincipal UserDetails userDetails) {
         return studentService.getLearningProgress(userDetails.getUsername());
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/payments")
     public List<PaymentRecord> getPayments(@AuthenticationPrincipal UserDetails userDetails) {
         return studentService.getPayments(userDetails.getUsername());
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/slots")
     public List<TrainingSlot> getAvailableSlots(@RequestParam SessionType type) {
         return schedulingService.getAvailableSlots(type);
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/bookings")
     public TrainingBooking bookSlot(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -81,13 +81,13 @@ public class StudentController {
         return schedulingService.bookSlot(userDetails.getUsername(), request.slotId());
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/bookings")
     public List<TrainingBooking> getBookings(@AuthenticationPrincipal UserDetails userDetails) {
         return schedulingService.getStudentBookings(userDetails.getUsername());
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/bookings/{id}/rate")
     public void rateTeacher(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -96,14 +96,14 @@ public class StudentController {
         schedulingService.rateTeacher(userDetails.getUsername(), id, request.rating(), request.comment());
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/exams")
     public List<com.dinhphu28.drvinschl.entity.ExamRegistration> getExams(
             @AuthenticationPrincipal UserDetails userDetails) {
         return examService.getStudentExams(userDetails.getUsername());
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/exams/{sessionId}/retake")
     public com.dinhphu28.drvinschl.entity.ExamRegistration registerRetake(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -112,7 +112,7 @@ public class StudentController {
         return examService.registerRetake(userDetails.getUsername(), sessionId, part);
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/extra-registration")
     public ExtraRegistration registerExtra(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -121,7 +121,7 @@ public class StudentController {
         return studentService.registerExtra(userDetails.getUsername(), type, hours, null);
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/bookings/{id}/cancel")
     public TrainingBooking cancelBooking(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -129,7 +129,7 @@ public class StudentController {
         return schedulingService.cancelBooking(userDetails.getUsername(), id);
     }
 
-    @PreAuthorize("hasRole('HOC_VIEN')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/extra-registrations")
     public List<ExtraRegistration> getExtraRegistrations(
             @AuthenticationPrincipal UserDetails userDetails) {

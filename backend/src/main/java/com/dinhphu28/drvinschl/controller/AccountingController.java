@@ -21,6 +21,8 @@ import com.dinhphu28.drvinschl.entity.FuelRecord;
 import com.dinhphu28.drvinschl.entity.PaymentRecord;
 import com.dinhphu28.drvinschl.entity.SalaryRecord;
 import com.dinhphu28.drvinschl.entity.Student;
+import com.dinhphu28.drvinschl.entity.StudentCourseEnrollment;
+import com.dinhphu28.drvinschl.model.CreateStudentCourseEnrollmentRequest;
 import com.dinhphu28.drvinschl.model.CreateStudentAccountRequest;
 import com.dinhphu28.drvinschl.model.FuelSummaryResponse;
 import com.dinhphu28.drvinschl.model.PaymentRequest;
@@ -39,6 +41,11 @@ public class AccountingController {
     @PostMapping("/students")
     public Student createStudentAccount(@RequestBody CreateStudentAccountRequest request) {
         return accountingService.createStudentAccount(request);
+    }
+
+    @PostMapping("/student-course-enrollments")
+    public StudentCourseEnrollment createStudentCourseEnrollment(@RequestBody CreateStudentCourseEnrollmentRequest request) {
+        return accountingService.createStudentCourseEnrollment(request);
     }
 
     @PostMapping("/payments")

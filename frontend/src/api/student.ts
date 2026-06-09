@@ -7,7 +7,15 @@ export type StudentSessionType =
   | "SA_HINH_THO"
   | "SA_HINH_CAM_UNG";
 
+export interface UpdateStudentProfileRequest {
+  fullName: string;
+  phone: string;
+  dob: string | null;
+}
+
 export const getStudentProfile = () => api.get("/students/profile");
+export const updateStudentProfile = (payload: UpdateStudentProfileRequest) =>
+  api.put("/students/profile", payload);
 export const getStudentProgress = () => api.get("/students/progress");
 export const getStudentPayments = () => api.get("/students/payments");
 export const getAvailableStudentSlots = (type: StudentSessionType) =>

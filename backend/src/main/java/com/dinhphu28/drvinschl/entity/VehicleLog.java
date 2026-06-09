@@ -38,4 +38,7 @@ public class VehicleLog extends AbstractAuditableEntity {
 
     @Column(name = "is_clean")
     private boolean clean;
+
+    @Column(name = "clean_photo_url")
+    private String cleanPhotoUrl;
 }

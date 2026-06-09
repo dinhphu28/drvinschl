@@ -8,6 +8,7 @@ export interface StudentLookupOption {
   fullName: string;
   phone?: string;
   coursePackage?: string;
+  coursePackages?: string[];
   courseStatus?: string;
 }
 
@@ -73,7 +74,7 @@ const StudentPicker = ({
         {loading
           ? "Đang tìm..."
           : selected
-            ? `Đã chọn: ${selected.fullName} - ${selected.coursePackage || "chưa có khóa"}`
+            ? `Đã chọn: ${selected.fullName} - ${(selected.coursePackages?.length ? selected.coursePackages.join(", ") : selected.coursePackage) || "chưa có khóa"}`
             : "Gõ vài ký tự để thu hẹp danh sách."}
       </FormText>
     </div>

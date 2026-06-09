@@ -145,9 +145,14 @@ public class TeacherService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
 
-        VehicleLog log = new VehicleLog();
-        log.setTeacher(teacher);
-        log.setVehicle(vehicle);
+        VehicleLog log = vehicleLogRepository
+                .findFirstByVehicleAndTeacherAndReturnTimeIsNullOrderByDepartureTimeDesc(vehicle, teacher)
+                .orElseGet(() -> {
+                    VehicleLog newLog = new VehicleLog();
+                    newLog.setTeacher(teacher);
+                    newLog.setVehicle(vehicle);
+                    return newLog;
+                });
         log.setOdoReturn(odoReturn);
         log.setReturnTime(returnTime);
         vehicle.setCurrentOdo(odoReturn);
@@ -169,7 +174,7 @@ public class TeacherService {
 
     @Transactional
     public VehicleLog recordVehicleDeparture(String username, UUID vehicleId, Integer odoDeparture,
-            boolean isClean, LocalDateTime departureTime) {
+            boolean isClean, String cleanPhotoUrl, LocalDateTime departureTime) {
         User teacher = userContextService.requireUser(username);
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
@@ -180,6 +185,9 @@ public class TeacherService {
         log.setOdoDeparture(odoDeparture);
         log.setDepartureTime(departureTime);
         log.setClean(isClean);
+        log.setCleanPhotoUrl(cleanPhotoUrl);
+        vehicle.setClean(isClean);
+        vehicleRepository.save(vehicle);
         return vehicleLogRepository.save(log);
     }
 

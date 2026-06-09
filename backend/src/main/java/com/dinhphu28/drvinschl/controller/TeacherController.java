@@ -90,9 +90,10 @@ public class TeacherController {
             @PathVariable UUID vehicleId,
             @RequestParam Integer odoDeparture,
             @RequestParam boolean isClean,
+            @RequestParam(required = false) String cleanPhotoUrl,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime departureTime) {
         return teacherService.recordVehicleDeparture(
-                userDetails.getUsername(), vehicleId, odoDeparture, isClean, departureTime);
+                userDetails.getUsername(), vehicleId, odoDeparture, isClean, cleanPhotoUrl, departureTime);
     }
 
     @PostMapping("/vehicles/{vehicleId}/maintenance-request")

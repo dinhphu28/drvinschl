@@ -23,7 +23,7 @@ const TeacherPage = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [reportForm, setReportForm] = useState({ bookingId: "", type: "CO_BAN_4H", start: "", end: "", km: "", durationMinutes: "", datScreenshot: "" });
-  const [departureForm, setDepartureForm] = useState({ vehicleId: "", odoDeparture: "", isClean: true, departureTime: "" });
+  const [departureForm, setDepartureForm] = useState({ vehicleId: "", odoDeparture: "", isClean: true, cleanPhotoUrl: "", departureTime: "" });
   const [returnForm, setReturnForm] = useState({ vehicleId: "", odoReturn: "", returnTime: "" });
   const [fuelForm, setFuelForm] = useState({ vehicleId: "", date: new Date().toISOString().slice(0, 10), liters: "", receiptUrl: "", amount: "" });
   const [leaveForm, setLeaveForm] = useState({ start: "", end: "", reason: "" });
@@ -69,10 +69,15 @@ const TeacherPage = () => {
   const submitDeparture = async (e: React.FormEvent) => {
     e.preventDefault();
     await api.post(`/teachers/vehicles/${departureForm.vehicleId}/departure`, null, {
-      params: { odoDeparture: departureForm.odoDeparture, isClean: departureForm.isClean, departureTime: departureForm.departureTime },
+      params: {
+        odoDeparture: departureForm.odoDeparture,
+        isClean: departureForm.isClean,
+        cleanPhotoUrl: departureForm.cleanPhotoUrl || undefined,
+        departureTime: departureForm.departureTime,
+      },
     });
     setMessage("Đã ghi nhận xe đi");
-    setDepartureForm({ vehicleId: "", odoDeparture: "", isClean: true, departureTime: "" });
+    setDepartureForm({ vehicleId: "", odoDeparture: "", isClean: true, cleanPhotoUrl: "", departureTime: "" });
   };
 
   const submitReturn = async (e: React.FormEvent) => {
@@ -194,9 +199,10 @@ const TeacherPage = () => {
                 <h6>Xe đi</h6>
                 <Form onSubmit={submitDeparture}>
                   <FormGroup><Label>Xe</Label><VehiclePicker value={departureForm.vehicleId} onChange={(vehicleId) => setDepartureForm({ ...departureForm, vehicleId })} required /></FormGroup>
-                  <FormGroup><Label>ODO đi</Label><Input type="number" value={departureForm.odoDeparture} onChange={(e) => setDepartureForm({ ...departureForm, odoDeparture: e.target.value })} required /></FormGroup>
                   <FormGroup><Label>Thời gian đi</Label><Input type="datetime-local" value={departureForm.departureTime} onChange={(e) => setDepartureForm({ ...departureForm, departureTime: e.target.value })} required /></FormGroup>
-                  <FormGroup check className="mb-3"><Label check><Input type="checkbox" checked={departureForm.isClean} onChange={(e) => setDepartureForm({ ...departureForm, isClean: e.target.checked })} /> Xe sạch</Label></FormGroup>
+                  <FormGroup><Label>ODO đi</Label><Input type="number" value={departureForm.odoDeparture} onChange={(e) => setDepartureForm({ ...departureForm, odoDeparture: e.target.value })} required /></FormGroup>
+                  <FormGroup check className="mb-3"><Label check><Input type="checkbox" checked={departureForm.isClean} onChange={(e) => setDepartureForm({ ...departureForm, isClean: e.target.checked })} /> Xe sạch theo hình giáo viên gửi</Label></FormGroup>
+                  <FormGroup><Label>URL hình xe</Label><Input value={departureForm.cleanPhotoUrl} onChange={(e) => setDepartureForm({ ...departureForm, cleanPhotoUrl: e.target.value })} placeholder="Dán URL hình xe" /></FormGroup>
                   <Button color="primary" type="submit">Ghi xe đi</Button>
                 </Form>
               </Col>
@@ -204,8 +210,8 @@ const TeacherPage = () => {
                 <h6>Xe về / xăng</h6>
                 <Form onSubmit={submitReturn} className="mb-3">
                   <FormGroup><Label>Xe</Label><VehiclePicker value={returnForm.vehicleId} onChange={(vehicleId) => setReturnForm({ ...returnForm, vehicleId })} required /></FormGroup>
-                  <FormGroup><Label>ODO về</Label><Input type="number" value={returnForm.odoReturn} onChange={(e) => setReturnForm({ ...returnForm, odoReturn: e.target.value })} required /></FormGroup>
                   <FormGroup><Label>Thời gian về</Label><Input type="datetime-local" value={returnForm.returnTime} onChange={(e) => setReturnForm({ ...returnForm, returnTime: e.target.value })} required /></FormGroup>
+                  <FormGroup><Label>ODO về</Label><Input type="number" value={returnForm.odoReturn} onChange={(e) => setReturnForm({ ...returnForm, odoReturn: e.target.value })} required /></FormGroup>
                   <Button color="secondary" type="submit">Ghi xe về</Button>
                 </Form>
                 <Form onSubmit={submitFuel}>
