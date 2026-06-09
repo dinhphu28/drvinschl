@@ -29,6 +29,16 @@ interface VehicleRecord {
   currentOdo?: number;
   active: boolean;
 }
+interface SalaryRecord {
+  id: string;
+  teacher?: { firstName?: string; lastName?: string; username?: string };
+  month: string;
+  baseSalary: number;
+  bonus: number;
+  totalAmount: number;
+  approvedByAdmin: boolean;
+  approvedByDirector: boolean;
+}
 interface ScheduleDraft {
   module: string;
   dayPattern: string;
@@ -45,6 +55,7 @@ interface LeaveWorkflowConfig {
   approvalSteps: string;
   notes: string;
 }
+const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value : []);
 
 const packageNameOptions = ["A", "A1", "B Số Sàn", "B Tự Động", "C1"];
 const adminSidebarItems = [
@@ -52,6 +63,7 @@ const adminSidebarItems = [
   { id: "2", label: "Cấu hình hệ thống" },
   { id: "3", label: "Quản lý người dùng" },
   { id: "4", label: "Quản lý xe" },
+  { id: "5", label: "Tính lương" },
 ];
 const emptyPkg = {
   name: "B Số Sàn",
@@ -150,6 +162,10 @@ const AdminPage = () => {
   const [newUser, setNewUser] = useState({ username: "", email: "", firstName: "", lastName: "", password: "", role: "KINH_DOANH" });
   const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
   const [vehicleForm, setVehicleForm] = useState(emptyVehicleForm);
+  const [salaryMonth, setSalaryMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [salaryBase, setSalaryBase] = useState("8000000");
+  const [salaryBonus, setSalaryBonus] = useState("0");
+  const [salaries, setSalaries] = useState<SalaryRecord[]>([]);
 
   const flash = (m: string) => { setMessage(m); setTimeout(() => setMessage(""), 3000); };
   const loadPackages = () => api.get<CoursePackage[]>("/admin/course-packages").then((r) => setPackages(r.data));
@@ -157,11 +173,16 @@ const AdminPage = () => {
   const loadLeaveWorkflow = () => api.get<LeaveWorkflowConfig>("/admin/configs/leave-workflow").then((r) => setLeaveWorkflow(r.data));
   const loadUsers = () => api.get<UserRecord[]>("/admin/users").then((r) => setUsers(r.data)).catch(() => setUsers([]));
   const loadVehicles = () => api.get<VehicleRecord[]>("/vehicles").then((r) => setVehicles(r.data)).catch(() => setVehicles([]));
+  const loadSalaries = () =>
+    api.get<SalaryRecord[]>("/admin/salaries", { params: { month: salaryMonth } })
+      .then((r) => setSalaries(asArray<SalaryRecord>(r.data)))
+      .catch(() => setSalaries([]));
   useEffect(() => { loadPackages(); }, []);
   useEffect(() => { loadConfigs(); }, []);
   useEffect(() => { loadLeaveWorkflow(); }, []);
   useEffect(() => { loadUsers(); }, []);
   useEffect(() => { loadVehicles(); }, []);
+  useEffect(() => { loadSalaries(); }, [salaryMonth]);
   useEffect(() => {
     const config = configs.find((item) => item.configKey === satHachInstructionsKey);
     if (config?.configValue) {
@@ -360,6 +381,29 @@ const AdminPage = () => {
       loadVehicles();
     } catch { flash("Không thể tạo xe"); }
   };
+  const calculateAllSalaries = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await api.post<SalaryRecord[]>("/admin/salaries/calculate-all", null, {
+        params: { month: salaryMonth, baseSalary: salaryBase, bonus: salaryBonus || undefined },
+      });
+      setSalaries(asArray<SalaryRecord>(res.data));
+      flash("Đã tính lương cho tất cả giáo viên");
+    } catch (err: any) {
+      flash(err?.response?.data?.error || "Không thể tính lương");
+    }
+  };
+  const submitSalariesForDirector = async () => {
+    try {
+      const res = await api.put<SalaryRecord[]>("/admin/salaries/submit", null, { params: { month: salaryMonth } });
+      setSalaries(asArray<SalaryRecord>(res.data));
+      flash("Đã gửi lương chờ Giám đốc duyệt");
+    } catch (err: any) {
+      flash(err?.response?.data?.error || "Không thể gửi duyệt lương");
+    }
+  };
+  const safeSalaries = asArray<SalaryRecord>(salaries);
+  const salarySummary = safeSalaries.reduce((acc, item) => acc + Number(item.totalAmount || 0), 0);
   return (
     <AppLayout
       title="Quản trị hệ thống"
@@ -722,6 +766,58 @@ const AdminPage = () => {
                                 <td>{vehicle.insuranceExpiry || "—"}</td>
                                 <td>{vehicle.currentOdo?.toLocaleString("vi-VN") ?? "—"}</td>
                                 <td><Badge color={vehicle.active ? "success" : "secondary"}>{vehicle.active ? "Hoạt động" : "Tắt"}</Badge></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      )}
+                    </CardBody>
+                  </Card>
+                </Col>
+              </Row>
+            </TabPane>
+            <TabPane tabId="5">
+              <Row>
+                <Col lg="4" className="mb-3">
+                  <Card className="content-card">
+                    <CardHeader>Tính lương toàn hệ thống</CardHeader>
+                    <CardBody>
+                      <Form onSubmit={calculateAllSalaries}>
+                        <FormGroup><Label>Tháng lương</Label><Input type="month" value={salaryMonth} onChange={(e) => setSalaryMonth(e.target.value)} required /></FormGroup>
+                        <FormGroup><Label>Lương cơ bản mặc định</Label><Input type="number" value={salaryBase} onChange={(e) => setSalaryBase(e.target.value)} required /></FormGroup>
+                        <FormGroup><Label>Thưởng mặc định</Label><Input type="number" value={salaryBonus} onChange={(e) => setSalaryBonus(e.target.value)} /></FormGroup>
+                        <Button color="primary" type="submit" className="me-2">Tính cho tất cả GV</Button>
+                        <Button color="success" type="button" onClick={submitSalariesForDirector} disabled={salaries.length === 0}>Gửi Giám đốc duyệt</Button>
+                      </Form>
+                    </CardBody>
+                  </Card>
+                  <Card className="content-card">
+                    <CardHeader>Tổng hợp</CardHeader>
+                    <CardBody>
+                      <div className="text-muted small">Số bảng lương</div>
+                      <div className="fs-4 fw-semibold">{salaries.length}</div>
+                      <div className="text-muted small mt-3">Tổng lương tháng</div>
+                      <div className="fs-4 fw-semibold">{salarySummary.toLocaleString("vi-VN")} đ</div>
+                    </CardBody>
+                  </Card>
+                </Col>
+                <Col lg="8" className="mb-3">
+                  <Card className="content-card">
+                    <CardHeader>Bảng lương giáo viên</CardHeader>
+                    <CardBody className="p-0">
+                      {salaries.length === 0 ? <EmptyState message="Chưa có bảng lương cho tháng này" /> : (
+                        <Table responsive hover className="mb-0">
+                          <thead><tr><th>Giáo viên</th><th>Tháng</th><th>Lương cơ bản</th><th>Thưởng</th><th>Tổng</th><th>Admin</th><th>Giám đốc</th></tr></thead>
+                          <tbody>
+                            {salaries.map((salary) => (
+                              <tr key={salary.id}>
+                                <td><strong>{`${salary.teacher?.firstName ?? ""} ${salary.teacher?.lastName ?? ""}`.trim() || salary.teacher?.username || "—"}</strong></td>
+                                <td>{salary.month}</td>
+                                <td>{Number(salary.baseSalary || 0).toLocaleString("vi-VN")} đ</td>
+                                <td>{Number(salary.bonus || 0).toLocaleString("vi-VN")} đ</td>
+                                <td><strong>{Number(salary.totalAmount || 0).toLocaleString("vi-VN")} đ</strong></td>
+                                <td><Badge color={salary.approvedByAdmin ? "success" : "warning"}>{salary.approvedByAdmin ? "Đã gửi" : "Đang kiểm tra"}</Badge></td>
+                                <td><Badge color={salary.approvedByDirector ? "success" : "secondary"}>{salary.approvedByDirector ? "Đã duyệt" : "Chờ duyệt"}</Badge></td>
                               </tr>
                             ))}
                           </tbody>

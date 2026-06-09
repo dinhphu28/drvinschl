@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dinhphu28.drvinschl.entity.CoursePackage;
+import com.dinhphu28.drvinschl.entity.SalaryRecord;
 import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.model.CreateUserRequest;
@@ -58,6 +59,24 @@ public class AdminController {
     @GetMapping("/configs")
     public List<SystemConfig> getConfigs() {
         return adminService.getConfigs();
+    }
+
+    @GetMapping("/salaries")
+    public List<SalaryRecord> getSalaries(@RequestParam(required = false) String month) {
+        return adminService.getSalaries(month);
+    }
+
+    @PostMapping("/salaries/calculate-all")
+    public List<SalaryRecord> calculateAllTeacherSalaries(
+            @RequestParam String month,
+            @RequestParam BigDecimal baseSalary,
+            @RequestParam(required = false) BigDecimal bonus) {
+        return adminService.calculateAllTeacherSalaries(month, baseSalary, bonus);
+    }
+
+    @PutMapping("/salaries/submit")
+    public List<SalaryRecord> submitSalariesForDirector(@RequestParam String month) {
+        return adminService.submitSalariesForDirector(month);
     }
 
     @PutMapping("/configs")

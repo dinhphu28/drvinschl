@@ -69,7 +69,7 @@ public class AreaManagerService {
         salary.setBaseSalary(baseSalary);
         salary.setBonus(bonusAmount);
         salary.setTotalAmount(baseSalary.add(bonusAmount));
-        salary.setApprovedByAdmin(true);
+        salary.setApprovedByAdmin(false);
         return salaryRecordRepository.save(salary);
     }
 

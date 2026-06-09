@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.dinhphu28.drvinschl.entity.CoursePackage;
+import com.dinhphu28.drvinschl.entity.Role;
+import com.dinhphu28.drvinschl.entity.SalaryRecord;
 import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
@@ -17,6 +19,7 @@ import com.dinhphu28.drvinschl.model.CreateUserRequest;
 import com.dinhphu28.drvinschl.model.LeaveWorkflowConfig;
 import com.dinhphu28.drvinschl.model.UserProfileResponse;
 import com.dinhphu28.drvinschl.repository.CoursePackageRepository;
+import com.dinhphu28.drvinschl.repository.SalaryRecordRepository;
 import com.dinhphu28.drvinschl.repository.SystemConfigRepository;
 import com.dinhphu28.drvinschl.repository.UserRepository;
 
@@ -32,6 +35,7 @@ public class AdminService {
     private final SystemConfigRepository systemConfigRepository;
     private final PasswordEncoder passwordEncoder;
     private final LeaveWorkflowConfigService leaveWorkflowConfigService;
+    private final SalaryRecordRepository salaryRecordRepository;
 
     @Transactional
     public User createUser(CreateUserRequest request) {
@@ -72,6 +76,53 @@ public class AdminService {
 
     public List<SystemConfig> getConfigs() {
         return systemConfigRepository.findAll();
+    }
+
+    public List<SalaryRecord> getSalaries(String month) {
+        if (month != null && !month.isBlank()) {
+            return salaryRecordRepository.findByMonth(month);
+        }
+        return salaryRecordRepository.findAll();
+    }
+
+    @Transactional
+    public List<SalaryRecord> calculateAllTeacherSalaries(String month, BigDecimal baseSalary, BigDecimal bonus) {
+        if (month == null || month.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn tháng lương");
+        }
+        BigDecimal safeBase = baseSalary != null ? baseSalary : BigDecimal.ZERO;
+        BigDecimal safeBonus = bonus != null ? bonus : BigDecimal.ZERO;
+        List<SalaryRecord> salaries = userRepository.findByRole(Role.GIAO_VIEN).stream()
+                .map(teacher -> {
+                    SalaryRecord salary = salaryRecordRepository.findByTeacherAndMonth(teacher, month)
+                            .orElseGet(SalaryRecord::new);
+                    if (salary.isApprovedByDirector()) {
+                        return salary;
+                    }
+                    salary.setTeacher(teacher);
+                    salary.setMonth(month);
+                    salary.setBaseSalary(safeBase);
+                    salary.setBonus(safeBonus);
+                    salary.setTotalAmount(safeBase.add(safeBonus));
+                    salary.setApprovedByAdmin(false);
+                    salary.setApprovedByDirector(false);
+                    return salaryRecordRepository.save(salary);
+                })
+                .toList();
+        return salaries;
+    }
+
+    @Transactional
+    public List<SalaryRecord> submitSalariesForDirector(String month) {
+        if (month == null || month.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn tháng lương");
+        }
+        List<SalaryRecord> salaries = salaryRecordRepository.findByMonthAndApprovedByDirectorFalse(month);
+        if (salaries.isEmpty()) {
+            throw new IllegalArgumentException("Không có bảng lương nào chờ gửi Giám đốc");
+        }
+        salaries.forEach(salary -> salary.setApprovedByAdmin(true));
+        return salaryRecordRepository.saveAll(salaries);
     }
 
     public LeaveWorkflowConfig getLeaveWorkflowConfig() {
