@@ -54,6 +54,9 @@ const AccountingPage = () => {
 
   //Tạo tài khoản
   const [studentForm, setStudentForm] = useState(emptyStudentForm);
+  const [enrollmentForm, setEnrollmentForm] = useState({
+    studentId: "", coursePackage: "B Số Sàn", totalFee: "15000000", applicationDate: new Date().toISOString().slice(0, 10),
+  });
 
   //Thu phí
   const [paymentForm, setPaymentForm] = useState({
@@ -93,6 +96,22 @@ const AccountingPage = () => {
       setStudentForm(emptyStudentForm);
     } catch {
       setMessage("Không thể tạo học viên");
+    }
+  };
+
+  const createCourseEnrollment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post("/accounting/student-course-enrollments", {
+        ...enrollmentForm,
+        totalFee: Number(enrollmentForm.totalFee),
+      });
+      setMessage("Đã ghi danh thêm khóa học cho học viên");
+      setEnrollmentForm({
+        studentId: "", coursePackage: "B Số Sàn", totalFee: "15000000", applicationDate: new Date().toISOString().slice(0, 10),
+      });
+    } catch {
+      setMessage("Không thể ghi danh thêm khóa học");
     }
   };
 
@@ -166,23 +185,29 @@ const AccountingPage = () => {
               className={activeTab === "2" ? "active" : ""}
               onClick={() => toggleTab("2")}
             >
-              Thu phí
+              Thêm khóa
             </NavLink>
             <NavLink
               className={activeTab === "3" ? "active" : ""}
               onClick={() => toggleTab("3")}
             >
-              Hoàn phí
+              Thu phí
             </NavLink>
             <NavLink
               className={activeTab === "4" ? "active" : ""}
               onClick={() => toggleTab("4")}
             >
-              Xăng
+              Hoàn phí
             </NavLink>
             <NavLink
               className={activeTab === "5" ? "active" : ""}
               onClick={() => toggleTab("5")}
+            >
+              Xăng
+            </NavLink>
+            <NavLink
+              className={activeTab === "6" ? "active" : ""}
+              onClick={() => toggleTab("6")}
             >
               Lương
             </NavLink>
@@ -217,8 +242,33 @@ const AccountingPage = () => {
               </Form>
             </TabPane>
 
-            {/* Thu phí */}
+            {/* Thêm khóa */}
             <TabPane tabId="2">
+              <h5 className="mb-3">Ghi danh thêm khóa học</h5>
+              <Form onSubmit={createCourseEnrollment}>
+                <FormGroup>
+                  <Label>Học viên</Label>
+                  <StudentPicker
+                    value={enrollmentForm.studentId}
+                    onChange={(studentId) => setEnrollmentForm({ ...enrollmentForm, studentId })}
+                    required
+                  />
+                </FormGroup>
+                <Row>
+                  <Col md="4"><FormGroup><Label>Khóa học</Label>
+                    <Input type="select" value={enrollmentForm.coursePackage} onChange={(e) => setEnrollmentForm({ ...enrollmentForm, coursePackage: e.target.value })}>
+                      {coursePackageOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+                    </Input>
+                  </FormGroup></Col>
+                  <Col md="4"><FormGroup><Label>Ngày nộp hồ sơ</Label><Input type="date" value={enrollmentForm.applicationDate} onChange={(e) => setEnrollmentForm({ ...enrollmentForm, applicationDate: e.target.value })} /></FormGroup></Col>
+                  <Col md="4"><FormGroup><Label>Học phí khóa</Label><Input type="number" value={enrollmentForm.totalFee} onChange={(e) => setEnrollmentForm({ ...enrollmentForm, totalFee: e.target.value })} /></FormGroup></Col>
+                </Row>
+                <Button color="primary">Ghi danh khóa học</Button>
+              </Form>
+            </TabPane>
+
+            {/* Thu phí */}
+            <TabPane tabId="3">
               <h5 className="mb-3">Thu học phí</h5>
               <Form onSubmit={recordPayment}>
                 <FormGroup><Label>Học viên</Label><StudentPicker value={paymentForm.studentId} onChange={(studentId) => setPaymentForm({ ...paymentForm, studentId })} required /></FormGroup>
@@ -241,7 +291,7 @@ const AccountingPage = () => {
             </TabPane>
 
             {/* Hoàn phí */}
-            <TabPane tabId="3">
+            <TabPane tabId="4">
               <h5 className="mb-3">Hoàn phí</h5>
               <Form onSubmit={recordRefund}>
                 <FormGroup><Label>Học viên</Label><StudentPicker value={refundForm.studentId} onChange={(studentId) => setRefundForm({ ...refundForm, studentId })} required /></FormGroup>
@@ -252,7 +302,7 @@ const AccountingPage = () => {
             </TabPane>
 
             {/* Xăng */}
-            <TabPane tabId="4">
+            <TabPane tabId="5">
               <h5 className="mb-3">Phiếu xăng</h5>
               <Row className="align-items-end mb-3">
                 <Col md="3">
@@ -329,7 +379,7 @@ const AccountingPage = () => {
             </TabPane>
 
             {/* Lương */}
-            <TabPane tabId="5">
+            <TabPane tabId="6">
               <h5 className="mb-3">Bảng lương</h5>
               {salaries.length === 0 ? (
                 <EmptyState message="Chưa có dữ liệu lương" />

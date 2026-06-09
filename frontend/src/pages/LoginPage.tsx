@@ -20,7 +20,7 @@ const LoginPage: React.FC = () => {
   const { accessToken, setAccessToken, setUser, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -50,7 +50,7 @@ const LoginPage: React.FC = () => {
     setError("");
     setInfo("");
     try {
-      const res = await login({ email, password });
+      const res = await login({ loginId, password });
       await finishLogin(res.data.accessToken);
     } catch {
       setError("Email hoặc mật khẩu không đúng");
@@ -114,12 +114,11 @@ const LoginPage: React.FC = () => {
 
           <Form onSubmit={handleLogin}>
             <FormGroup>
-              <Label>Email</Label>
+              <Label>Email hoặc username</Label>
               <Input
-                type="email"
-                placeholder="admin@drvinschl.local"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin hoặc admin@drvinschl.local"
+                value={loginId}
+                onChange={(e) => setLoginId(e.target.value)}
               />
             </FormGroup>
 

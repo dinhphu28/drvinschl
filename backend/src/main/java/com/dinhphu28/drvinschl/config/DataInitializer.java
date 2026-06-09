@@ -13,9 +13,11 @@ import com.dinhphu28.drvinschl.entity.CoursePackage;
 import com.dinhphu28.drvinschl.entity.CourseStatus;
 import com.dinhphu28.drvinschl.entity.Role;
 import com.dinhphu28.drvinschl.entity.Student;
+import com.dinhphu28.drvinschl.entity.StudentCourseEnrollment;
 import com.dinhphu28.drvinschl.entity.SystemConfig;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.repository.CoursePackageRepository;
+import com.dinhphu28.drvinschl.repository.StudentCourseEnrollmentRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
 import com.dinhphu28.drvinschl.repository.SystemConfigRepository;
 import com.dinhphu28.drvinschl.repository.UserRepository;
@@ -28,6 +30,7 @@ public class DataInitializer {
     private final UserRepository userRepository;
     private final StudentRepository studentRepository;
     private final CoursePackageRepository coursePackageRepository;
+    private final StudentCourseEnrollmentRepository studentCourseEnrollmentRepository;
     private final SystemConfigRepository systemConfigRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -57,7 +60,8 @@ public class DataInitializer {
                 student.setCourseStatus(CourseStatus.DANG_HOC);
                 student.setApplicationDate(LocalDate.now().minusMonths(2));
                 student.setOpeningDate(LocalDate.now().minusMonths(1));
-                studentRepository.save(student);
+                Student savedStudent = studentRepository.save(student);
+                createEnrollment(savedStudent);
 
             }
             upsertCoursePackage("A", "6000000", 12, 0, 0, 0, 0, 0, 4, 6, 2, 1);
@@ -91,6 +95,25 @@ public class DataInitializer {
                 .isEnabled(true)
                 .build();
         return userRepository.save(user);
+    }
+
+    private void createEnrollment(Student student) {
+        if (studentCourseEnrollmentRepository.existsByStudentAndCoursePackage(student, student.getCoursePackage())) {
+            return;
+        }
+        StudentCourseEnrollment enrollment = new StudentCourseEnrollment();
+        enrollment.setStudent(student);
+        enrollment.setCoursePackage(student.getCoursePackage());
+        enrollment.setCourseStatus(student.getCourseStatus());
+        enrollment.setApplicationDate(student.getApplicationDate());
+        enrollment.setOpeningDate(student.getOpeningDate());
+        enrollment.setClosingDate(student.getClosingDate());
+        enrollment.setSettlementDate(student.getSettlementDate());
+        enrollment.setCertificateReceivedDate(student.getCertificateReceivedDate());
+        enrollment.setTotalFee(student.getTotalFee());
+        enrollment.setPaidFee(student.getPaidFee());
+        enrollment.setPrimaryCourse(true);
+        studentCourseEnrollmentRepository.save(enrollment);
     }
 
     private void upsertConfig(String key, String value, String desc) {

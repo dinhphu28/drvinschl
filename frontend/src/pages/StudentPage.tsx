@@ -33,6 +33,7 @@ import {
   rateStudentTeacher,
   registerStudentExtra,
   registerStudentRetake,
+  updateStudentProfile,
   type ExamRetakePart,
   type StudentExtraType,
   type StudentSessionType,
@@ -60,6 +61,22 @@ interface StudentProfile {
   paidFee: number;
   remainingFee: number;
   courseStatus: string;
+  courseEnrollments?: StudentCourseEnrollment[];
+}
+
+interface StudentCourseEnrollment {
+  id?: string | null;
+  coursePackage: string;
+  courseStatus?: string;
+  applicationDate?: string;
+  openingDate?: string;
+  closingDate?: string;
+  settlementDate?: string;
+  certificateReceivedDate?: string;
+  totalFee?: number;
+  paidFee?: number;
+  remainingFee?: number;
+  primaryCourse: boolean;
 }
 
 interface ProgressItem {
@@ -140,6 +157,18 @@ const moduleLabels: Record<string, string> = {
   SA_HINH_CAM_UNG: "Sa hình cảm ứng",
 };
 
+const progressModules = [
+  "LY_THUYET",
+  "MO_PHONG",
+  "CO_BAN_4H",
+  "CABIN",
+  "DAT",
+  "SA_HINH_THO",
+  "SA_HINH_CAM_UNG",
+] as const;
+
+type ProgressModule = (typeof progressModules)[number];
+
 const paymentLabels: Record<string, string> = {
   HOC_PHI: "Học phí",
   HOC_THEM: "Học thêm",
@@ -159,10 +188,15 @@ const retakePartLabels: Record<ExamRetakePart, string> = {
   TOT_NGHIEP: "Tốt nghiệp",
   SAT_HACH: "Sát hạch",
 };
+const asArray = <T,>(value: unknown): T[] => Array.isArray(value) ? value : [];
+const formatDate = (value?: string | null) => (value ? new Date(value).toLocaleDateString("vi-VN") : "—");
+const toDateInputValue = (value?: string | null) => (value ? value.slice(0, 10) : "");
 
 const StudentPage = () => {
   const [activeTab, setActiveTab] = useState("1");
+  const [activeProgressModule, setActiveProgressModule] = useState<ProgressModule>("LY_THUYET");
   const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [profileForm, setProfileForm] = useState({ fullName: "", phone: "", dob: "" });
   const [progress, setProgress] = useState<ProgressItem[]>([]);
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -180,11 +214,11 @@ const StudentPage = () => {
 
   const loadAll = () => {
     getStudentProfile().then((r) => setProfile(r.data)).catch(() => setProfile(null));
-    getStudentProgress().then((r) => setProgress(r.data)).catch(() => setProgress([]));
-    getStudentPayments().then((r) => setPayments(r.data)).catch(() => setPayments([]));
-    getStudentBookings().then((r) => setBookings(r.data)).catch(() => setBookings([]));
-    getStudentExams().then((r) => setExams(r.data)).catch(() => setExams([]));
-    getStudentExtraRegistrations().then((r) => setExtras(r.data)).catch(() => setExtras([]));
+    getStudentProgress().then((r) => setProgress(asArray<ProgressItem>(r.data))).catch(() => setProgress([]));
+    getStudentPayments().then((r) => setPayments(asArray<PaymentItem>(r.data))).catch(() => setPayments([]));
+    getStudentBookings().then((r) => setBookings(asArray<Booking>(r.data))).catch(() => setBookings([]));
+    getStudentExams().then((r) => setExams(asArray<ExamRegistration>(r.data))).catch(() => setExams([]));
+    getStudentExtraRegistrations().then((r) => setExtras(asArray<ExtraRegistration>(r.data))).catch(() => setExtras([]));
   };
 
   useEffect(() => {
@@ -192,7 +226,18 @@ const StudentPage = () => {
   }, []);
 
   useEffect(() => {
-    getAvailableStudentSlots(sessionType).then((r) => setSlots(r.data)).catch(() => setSlots([]));
+    if (!profile) {
+      return;
+    }
+    setProfileForm({
+      fullName: profile.fullName ?? "",
+      phone: profile.phone ?? "",
+      dob: toDateInputValue(profile.dob),
+    });
+  }, [profile]);
+
+  useEffect(() => {
+    getAvailableStudentSlots(sessionType).then((r) => setSlots(asArray<Slot>(r.data))).catch(() => setSlots([]));
   }, [sessionType]);
 
   const bookingOptions = useMemo(
@@ -202,12 +247,54 @@ const StudentPage = () => {
     })),
     [bookings],
   );
+  const progressByModule = useMemo(
+    () => progress.reduce<Record<string, ProgressItem>>((acc, item) => {
+      acc[item.module] = item;
+      return acc;
+    }, {}),
+    [progress],
+  );
+  const activeProgress = progressByModule[activeProgressModule];
+  const safeSlots = asArray<Slot>(slots);
+  const courseEnrollments = profile?.courseEnrollments?.length
+    ? profile.courseEnrollments
+    : profile?.coursePackage
+      ? [{
+          coursePackage: profile.coursePackage,
+          courseStatus: profile.courseStatus,
+          applicationDate: profile.applicationDate,
+          openingDate: profile.openingDate,
+          closingDate: profile.closingDate,
+          settlementDate: profile.settlementDate,
+          certificateReceivedDate: profile.certificateReceivedDate,
+          totalFee: profile.totalFee,
+          paidFee: profile.paidFee,
+          remainingFee: profile.remainingFee,
+          primaryCourse: true,
+        }]
+      : [];
+  const missingBasicInfo = !profile?.fullName || !profile?.phone || !profile?.dob;
+
+  const handleProfileFormChange = (field: keyof typeof profileForm, value: string) => {
+    setProfileForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await updateStudentProfile({
+      fullName: profileForm.fullName.trim(),
+      phone: profileForm.phone.trim(),
+      dob: profileForm.dob || null,
+    });
+    setMessage("Đã cập nhật thông tin cá nhân");
+    loadAll();
+  };
 
   const handleBookSlot = async (slotId: string) => {
     await bookStudentSlot(slotId);
     setMessage("Đã đặt lịch học");
     loadAll();
-    getAvailableStudentSlots(sessionType).then((r) => setSlots(r.data)).catch(() => setSlots([]));
+    getAvailableStudentSlots(sessionType).then((r) => setSlots(asArray<Slot>(r.data))).catch(() => setSlots([]));
   };
 
   const handleCancelBooking = async (bookingId: string) => {
@@ -247,37 +334,95 @@ const StudentPage = () => {
     <AppLayout title="Học viên">
       <div className="student-page">
         {message && <div className="alert alert-success alert-dismissible fade show mt-2">{message}</div>}
-        <Card className="mb-4 content-card student-summary-card">
-          <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div>
-              <div className="fw-semibold">Tổng quan học viên</div>
-              <small className="text-muted">Toàn bộ quy trình học, lịch, học phí và thi đều ở web.</small>
-            </div>
-            {profile && <Badge color="primary">{profile.courseStatus?.replace(/_/g, " ")}</Badge>}
-          </CardHeader>
-          <CardBody>
-            {profile ? (
-              <Row className="g-3 student-summary-grid">
-                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Họ tên</div><div className="fw-semibold">{profile.fullName}</div></div></Col>
-                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Khóa học</div><div className="fw-semibold">{profile.coursePackage || "—"}</div></div></Col>
-                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Điện thoại</div><div className="fw-semibold">{profile.phone || "—"}</div></div></Col>
-                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Đã đóng</div><div className="fw-semibold">{Number(profile.paidFee).toLocaleString("vi-VN")} đ</div></div></Col>
-                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Còn lại</div><div className="fw-semibold">{Number(profile.remainingFee).toLocaleString("vi-VN")} đ</div></div></Col>
-                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Ngày khai giảng</div><div className="fw-semibold">{profile.openingDate ? new Date(profile.openingDate).toLocaleDateString("vi-VN") : "—"}</div></div></Col>
-                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Khám sức khỏe</div><div className="fw-semibold">{profile.healthCheckSubmitted ? `Đã nộp${profile.healthCheckSubmittedDate ? ` (${new Date(profile.healthCheckSubmittedDate).toLocaleDateString("vi-VN")})` : ""}` : "Chưa nộp"}</div></div></Col>
-                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Hồ sơ</div><div className="fw-semibold">{profile.registrationFormSubmitted && profile.photoSubmitted ? "Đã đủ đơn và ảnh" : "Cần bổ sung"}</div></div></Col>
-                <Col md="4"><div className="student-summary-item"><div className="text-muted small">Nhận bằng</div><div className="fw-semibold">{profile.certificateReceivedDate ? new Date(profile.certificateReceivedDate).toLocaleDateString("vi-VN") : "Chưa có thông tin"}</div></div></Col>
-              </Row>
-            ) : (
-              <EmptyState message="Chưa có thông tin học viên" />
-            )}
-            {profile?.tuitionReminder && (
-              <div className="alert alert-warning mt-3 mb-0">
-                Học phí còn lại: {Number(profile.remainingFee).toLocaleString("vi-VN")} đ. Vui lòng hoàn tất theo lịch thu phí của trung tâm.
-              </div>
-            )}
-          </CardBody>
-        </Card>
+        <Row className="g-3 mb-4">
+          <Col lg="5">
+            <Card className="content-card student-summary-card h-100">
+              <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div className="fw-semibold">Thông tin cá nhân</div>
+                {missingBasicInfo && <Badge color="warning">Cần bổ sung</Badge>}
+              </CardHeader>
+              <CardBody>
+                <Form onSubmit={handleUpdateProfile}>
+                  <FormGroup>
+                    <Label>Họ tên</Label>
+                    <Input
+                      value={profileForm.fullName}
+                      onChange={(e) => handleProfileFormChange("fullName", e.target.value)}
+                      placeholder="Nhập họ tên"
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Ngày sinh</Label>
+                    <Input
+                      type="date"
+                      value={profileForm.dob}
+                      onChange={(e) => handleProfileFormChange("dob", e.target.value)}
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Điện thoại</Label>
+                    <Input
+                      value={profileForm.phone}
+                      onChange={(e) => handleProfileFormChange("phone", e.target.value)}
+                      placeholder="Nhập số điện thoại"
+                    />
+                  </FormGroup>
+                  <Button color="primary" type="submit">Lưu thông tin</Button>
+                </Form>
+              </CardBody>
+            </Card>
+          </Col>
+          <Col lg="7">
+            <Card className="content-card student-summary-card h-100">
+              <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div className="fw-semibold">Các khóa học và hồ sơ</div>
+                {profile && <Badge color="primary">{profile.courseStatus?.replace(/_/g, " ")}</Badge>}
+              </CardHeader>
+              <CardBody>
+                {profile ? (
+                  <>
+                    <Row className="g-3 student-summary-grid mb-3">
+                      <Col md="6"><div className="student-summary-item"><div className="text-muted small">Ngày nộp Khám Sức Khỏe</div><div className="fw-semibold">{profile.healthCheckSubmitted ? formatDate(profile.healthCheckSubmittedDate) : "Chưa nộp"}</div></div></Col>
+                      <Col md="6"><div className="student-summary-item"><div className="text-muted small">Hồ sơ</div><div className="fw-semibold">{profile.registrationFormSubmitted && profile.photoSubmitted ? "Đã đủ đơn và ảnh" : "Cần bổ sung"}</div></div></Col>
+                    </Row>
+                    {courseEnrollments.length === 0 ? (
+                      <EmptyState message="Chưa có khóa học" />
+                    ) : (
+                      <div className="d-flex flex-column gap-3">
+                        {courseEnrollments.map((course, index) => (
+                          <div className="student-summary-item" key={course.id ?? `${course.coursePackage}-${index}`}>
+                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                              <div className="fw-semibold">{course.coursePackage || "—"}</div>
+                              <div className="d-flex gap-2 flex-wrap">
+                                {course.primaryCourse && <Badge color="secondary">Khóa chính</Badge>}
+                                {course.courseStatus && <StatusBadge status={course.courseStatus} />}
+                              </div>
+                            </div>
+                            <Row className="g-2">
+                              <Col md="6"><div className="text-muted small">Ngày nộp hồ sơ</div><div>{formatDate(course.applicationDate)}</div></Col>
+                              <Col md="6"><div className="text-muted small">Ngày khai giảng</div><div>{formatDate(course.openingDate)}</div></Col>
+                              <Col md="6"><div className="text-muted small">Ngày bế giảng</div><div>{formatDate(course.closingDate)}</div></Col>
+                              <Col md="6"><div className="text-muted small">Ngày thanh lý hồ sơ</div><div>{formatDate(course.settlementDate)}</div></Col>
+                              <Col md="6"><div className="text-muted small">Nhận bằng</div><div>{course.certificateReceivedDate ? formatDate(course.certificateReceivedDate) : "Chưa có thông tin"}</div></Col>
+                              <Col md="6"><div className="text-muted small">Học phí khóa</div><div>{Number(course.totalFee ?? 0).toLocaleString("vi-VN")} đ</div></Col>
+                            </Row>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <EmptyState message="Chưa có thông tin khóa học" />
+                )}
+              </CardBody>
+            </Card>
+          </Col>
+        </Row>
+        {profile?.tuitionReminder && (
+          <div className="alert alert-warning">
+            Học phí còn lại: {Number(profile.remainingFee).toLocaleString("vi-VN")} đ. Vui lòng hoàn tất theo lịch thu phí của trung tâm.
+          </div>
+        )}
 
         <Card className="content-card student-workspace-card">
           <CardBody className="py-2">
@@ -291,32 +436,42 @@ const StudentPage = () => {
             <TabPane tabId="1">
               <Card className="mt-3">
                 <CardHeader>Tiến độ học</CardHeader>
-                <CardBody className="p-0">
+                <CardBody>
                   {progress.length === 0 ? (
                     <EmptyState message="Chưa có dữ liệu tiến độ" />
                   ) : (
-                    <Table responsive hover className="mb-0 student-stacked-table">
-                      <thead>
-                        <tr>
-                          <th>Module</th>
-                          <th>Trạng thái</th>
-                          <th>Giờ</th>
-                          <th>Km</th>
-                          <th>Phút</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {progress.map((item) => (
-                          <tr key={item.id}>
-                            <td data-label="Module"><strong>{moduleLabels[item.module] ?? item.module}</strong></td>
-                            <td data-label="Trạng thái"><StatusBadge status={item.status} /></td>
-                            <td data-label="Giờ">{item.completedHours}/{item.requiredHours}</td>
-                            <td data-label="Km">{item.remainingKm ?? "—"}</td>
-                            <td data-label="Phút">{item.totalMinutes ?? "—"}</td>
-                          </tr>
+                    <>
+                      <Nav tabs className="student-tabs progress-step-tabs">
+                        {progressModules.map((module) => (
+                          <NavLink
+                            key={module}
+                            className={activeProgressModule === module ? "active" : ""}
+                            onClick={() => setActiveProgressModule(module)}
+                          >
+                            {moduleLabels[module]}
+                          </NavLink>
                         ))}
-                      </tbody>
-                    </Table>
+                      </Nav>
+                      <div className="student-progress-panel mt-3">
+                        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                          <div>
+                            <div className="fw-semibold">{moduleLabels[activeProgressModule]}</div>
+                            <small className="text-muted">Theo dõi từng bước trong lộ trình đào tạo</small>
+                          </div>
+                          {activeProgress && <StatusBadge status={activeProgress.status} />}
+                        </div>
+                        {activeProgress ? (
+                          <Row className="g-3 student-summary-grid">
+                            <Col md="3"><div className="student-summary-item"><div className="text-muted small">Giờ đã học</div><div className="fw-semibold">{activeProgress.completedHours ?? 0}/{activeProgress.requiredHours ?? 0}</div></div></Col>
+                            <Col md="3"><div className="student-summary-item"><div className="text-muted small">Km đã học</div><div className="fw-semibold">{activeProgress.totalKm ?? 0}</div></div></Col>
+                            <Col md="3"><div className="student-summary-item"><div className="text-muted small">Km còn lại</div><div className="fw-semibold">{activeProgress.remainingKm ?? 0}</div></div></Col>
+                            <Col md="3"><div className="student-summary-item"><div className="text-muted small">Tổng phút</div><div className="fw-semibold">{activeProgress.totalMinutes ?? 0}</div></div></Col>
+                          </Row>
+                        ) : (
+                          <EmptyState message={`Chưa có dữ liệu ${moduleLabels[activeProgressModule].toLowerCase()}`} />
+                        )}
+                      </div>
+                    </>
                   )}
                 </CardBody>
               </Card>
@@ -340,7 +495,7 @@ const StudentPage = () => {
                           </Button>
                         ))}
                       </div>
-                      {slots.length === 0 ? (
+                      {safeSlots.length === 0 ? (
                         <EmptyState message="Không có lịch trống" />
                       ) : (
                         <Table responsive hover className="mb-0 student-stacked-table">
@@ -353,7 +508,7 @@ const StudentPage = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {slots.map((slot) => (
+                            {safeSlots.map((slot) => (
                               <tr key={slot.id}>
                                 <td data-label="Thời gian">
                                   <div>{new Date(slot.startTime).toLocaleString("vi-VN")}</div>

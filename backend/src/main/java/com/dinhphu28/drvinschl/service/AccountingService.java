@@ -22,7 +22,9 @@ import com.dinhphu28.drvinschl.entity.ProgressStatus;
 import com.dinhphu28.drvinschl.entity.Role;
 import com.dinhphu28.drvinschl.entity.SalaryRecord;
 import com.dinhphu28.drvinschl.entity.Student;
+import com.dinhphu28.drvinschl.entity.StudentCourseEnrollment;
 import com.dinhphu28.drvinschl.entity.User;
+import com.dinhphu28.drvinschl.model.CreateStudentCourseEnrollmentRequest;
 import com.dinhphu28.drvinschl.model.CreateStudentAccountRequest;
 import com.dinhphu28.drvinschl.model.PaymentRequest;
 import com.dinhphu28.drvinschl.repository.CoursePackageRepository;
@@ -30,6 +32,7 @@ import com.dinhphu28.drvinschl.repository.FuelRecordRepository;
 import com.dinhphu28.drvinschl.repository.LearningProgressRepository;
 import com.dinhphu28.drvinschl.repository.PaymentRecordRepository;
 import com.dinhphu28.drvinschl.repository.SalaryRecordRepository;
+import com.dinhphu28.drvinschl.repository.StudentCourseEnrollmentRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
 import com.dinhphu28.drvinschl.repository.UserRepository;
 
@@ -47,6 +50,7 @@ public class AccountingService {
     private final PasswordEncoder passwordEncoder;
     private final CoursePackageRepository coursePackageRepository;
     private final LearningProgressRepository learningProgressRepository;
+    private final StudentCourseEnrollmentRepository studentCourseEnrollmentRepository;
 
     @Transactional
     public Student createStudentAccount(CreateStudentAccountRequest request) {
@@ -75,8 +79,29 @@ public class AccountingService {
         student.setApplicationDate(LocalDate.now());
         student.setCourseStatus(CourseStatus.DANG_KY);
         Student saved = studentRepository.save(student);
+        createInitialEnrollment(saved);
         initLearningProgress(saved);
         return saved;
+    }
+
+    private void createInitialEnrollment(Student student) {
+        if (!hasText(student.getCoursePackage())
+                || studentCourseEnrollmentRepository.existsByStudentAndCoursePackage(student, student.getCoursePackage())) {
+            return;
+        }
+        StudentCourseEnrollment enrollment = new StudentCourseEnrollment();
+        enrollment.setStudent(student);
+        enrollment.setCoursePackage(student.getCoursePackage());
+        enrollment.setCourseStatus(student.getCourseStatus());
+        enrollment.setApplicationDate(student.getApplicationDate());
+        enrollment.setOpeningDate(student.getOpeningDate());
+        enrollment.setClosingDate(student.getClosingDate());
+        enrollment.setSettlementDate(student.getSettlementDate());
+        enrollment.setCertificateReceivedDate(student.getCertificateReceivedDate());
+        enrollment.setTotalFee(student.getTotalFee());
+        enrollment.setPaidFee(student.getPaidFee());
+        enrollment.setPrimaryCourse(true);
+        studentCourseEnrollmentRepository.save(enrollment);
     }
 
     private void initLearningProgress(Student student) {
@@ -92,6 +117,73 @@ public class AccountingService {
                     + (pkg.getSensorExamHours() != null ? pkg.getSensorExamHours() : 0)
                 : 0;
         createProgress(student, LearningModule.SA_HINH_CAM_UNG, sensorHours, 0);
+    }
+
+    @Transactional
+    public StudentCourseEnrollment createStudentCourseEnrollment(CreateStudentCourseEnrollmentRequest request) {
+        Student student = studentRepository.findById(request.studentId())
+                .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+        if (studentCourseEnrollmentRepository.existsByStudentAndCoursePackage(student, request.coursePackage())) {
+            throw new IllegalArgumentException("Student already enrolled in this course package");
+        }
+
+        BigDecimal totalFee = request.totalFee() != null ? request.totalFee() : BigDecimal.ZERO;
+        StudentCourseEnrollment enrollment = new StudentCourseEnrollment();
+        enrollment.setStudent(student);
+        enrollment.setCoursePackage(request.coursePackage());
+        enrollment.setCourseStatus(CourseStatus.DANG_KY);
+        enrollment.setApplicationDate(request.applicationDate() != null ? request.applicationDate() : LocalDate.now());
+        enrollment.setTotalFee(totalFee);
+        enrollment.setPaidFee(BigDecimal.ZERO);
+        enrollment.setPrimaryCourse(studentCourseEnrollmentRepository.findFirstByStudentAndPrimaryCourseTrue(student).isEmpty());
+        StudentCourseEnrollment saved = studentCourseEnrollmentRepository.save(enrollment);
+
+        if (!hasText(student.getCoursePackage())) {
+            student.setCoursePackage(request.coursePackage());
+            student.setCourseStatus(CourseStatus.DANG_KY);
+            student.setApplicationDate(enrollment.getApplicationDate());
+        }
+        student.setTotalFee((student.getTotalFee() != null ? student.getTotalFee() : BigDecimal.ZERO).add(totalFee));
+        studentRepository.save(student);
+        addPackageRequirementsToProgress(student, request.coursePackage());
+        return saved;
+    }
+
+    private void addPackageRequirementsToProgress(Student student, String coursePackage) {
+        CoursePackage pkg = coursePackageRepository.findByName(coursePackage).orElse(null);
+        if (pkg == null) {
+            return;
+        }
+        addRequiredProgress(student, LearningModule.LY_THUYET, pkg.getTheoryHours(), 0);
+        addRequiredProgress(student, LearningModule.MO_PHONG, pkg.getSimulationHours(), 0);
+        addRequiredProgress(student, LearningModule.CO_BAN_4H, pkg.getBasic4hHours(), 0);
+        addRequiredProgress(student, LearningModule.CABIN, pkg.getCabinHours(), 0);
+        addRequiredProgress(student, LearningModule.DAT, pkg.getDatHours(), pkg.getDatKm());
+        addRequiredProgress(student, LearningModule.SA_HINH_THO, pkg.getRawYardHours(), 0);
+        int sensorHours = (pkg.getSensorPracticeHours() != null ? pkg.getSensorPracticeHours() : 0)
+                + (pkg.getSensorExamHours() != null ? pkg.getSensorExamHours() : 0);
+        addRequiredProgress(student, LearningModule.SA_HINH_CAM_UNG, sensorHours, 0);
+    }
+
+    private void addRequiredProgress(Student student, LearningModule module, Integer requiredHours, Integer requiredKm) {
+        LearningProgress progress = learningProgressRepository.findByStudentAndModule(student, module)
+                .orElseGet(() -> {
+                    LearningProgress p = new LearningProgress();
+                    p.setStudent(student);
+                    p.setModule(module);
+                    p.setStatus(ProgressStatus.NOT_STARTED);
+                    p.setCompletedHours(0);
+                    p.setRequiredHours(0);
+                    p.setTotalKm(0);
+                    p.setRemainingKm(0);
+                    p.setTotalMinutes(0);
+                    return p;
+                });
+        progress.setRequiredHours((progress.getRequiredHours() != null ? progress.getRequiredHours() : 0)
+                + (requiredHours != null ? requiredHours : 0));
+        progress.setRemainingKm((progress.getRemainingKm() != null ? progress.getRemainingKm() : 0)
+                + (requiredKm != null ? requiredKm : 0));
+        learningProgressRepository.save(progress);
     }
 
     private void createProgress(Student student, LearningModule module, Integer requiredHours, Integer requiredKm) {

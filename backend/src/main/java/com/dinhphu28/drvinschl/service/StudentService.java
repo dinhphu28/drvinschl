@@ -13,14 +13,17 @@ import com.dinhphu28.drvinschl.entity.LearningModule;
 import com.dinhphu28.drvinschl.entity.LearningProgress;
 import com.dinhphu28.drvinschl.entity.ProgressStatus;
 import com.dinhphu28.drvinschl.entity.Student;
+import com.dinhphu28.drvinschl.entity.StudentCourseEnrollment;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
 import com.dinhphu28.drvinschl.model.LearningProgressResponse;
+import com.dinhphu28.drvinschl.model.StudentCourseEnrollmentResponse;
 import com.dinhphu28.drvinschl.model.StudentProfileResponse;
 import com.dinhphu28.drvinschl.model.UpdateStudentProfileRequest;
 import com.dinhphu28.drvinschl.repository.ExtraRegistrationRepository;
 import com.dinhphu28.drvinschl.repository.LearningProgressRepository;
 import com.dinhphu28.drvinschl.repository.PaymentRecordRepository;
+import com.dinhphu28.drvinschl.repository.StudentCourseEnrollmentRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
 import com.dinhphu28.drvinschl.repository.SystemConfigRepository;
 
@@ -35,6 +38,7 @@ public class StudentService {
     private final ExtraRegistrationRepository extraRegistrationRepository;
     private final UserContextService userContextService;
     private final SystemConfigRepository systemConfigRepository;
+    private final StudentCourseEnrollmentRepository studentCourseEnrollmentRepository;
 
     public StudentProfileResponse getProfile(String username) {
         Student student = userContextService.requireStudent(username);
@@ -161,6 +165,7 @@ public class StudentService {
     private StudentProfileResponse toProfileResponse(Student student) {
         BigDecimal total = student.getTotalFee() != null ? student.getTotalFee() : BigDecimal.ZERO;
         BigDecimal paid = student.getPaidFee() != null ? student.getPaidFee() : BigDecimal.ZERO;
+        List<StudentCourseEnrollmentResponse> enrollments = getCourseEnrollments(student);
         return new StudentProfileResponse(
                 student.getId(),
                 student.getFullName(),
@@ -182,7 +187,51 @@ public class StudentService {
                 total,
                 paid,
                 total.subtract(paid),
-                student.getCourseStatus());
+                student.getCourseStatus(),
+                enrollments);
+    }
+
+    private List<StudentCourseEnrollmentResponse> getCourseEnrollments(Student student) {
+        List<StudentCourseEnrollment> enrollments = studentCourseEnrollmentRepository
+                .findByStudentOrderByPrimaryCourseDescApplicationDateDescCreatedDateDesc(student);
+        if (enrollments.isEmpty() && student.getCoursePackage() != null) {
+            BigDecimal total = student.getTotalFee() != null ? student.getTotalFee() : BigDecimal.ZERO;
+            BigDecimal paid = student.getPaidFee() != null ? student.getPaidFee() : BigDecimal.ZERO;
+            return List.of(new StudentCourseEnrollmentResponse(
+                    null,
+                    student.getCoursePackage(),
+                    student.getCourseStatus(),
+                    student.getApplicationDate(),
+                    student.getOpeningDate(),
+                    student.getClosingDate(),
+                    student.getSettlementDate(),
+                    student.getCertificateReceivedDate(),
+                    total,
+                    paid,
+                    total.subtract(paid),
+                    true));
+        }
+        return enrollments.stream()
+                .map(this::toCourseEnrollmentResponse)
+                .toList();
+    }
+
+    private StudentCourseEnrollmentResponse toCourseEnrollmentResponse(StudentCourseEnrollment enrollment) {
+        BigDecimal total = enrollment.getTotalFee() != null ? enrollment.getTotalFee() : BigDecimal.ZERO;
+        BigDecimal paid = enrollment.getPaidFee() != null ? enrollment.getPaidFee() : BigDecimal.ZERO;
+        return new StudentCourseEnrollmentResponse(
+                enrollment.getId(),
+                enrollment.getCoursePackage(),
+                enrollment.getCourseStatus(),
+                enrollment.getApplicationDate(),
+                enrollment.getOpeningDate(),
+                enrollment.getClosingDate(),
+                enrollment.getSettlementDate(),
+                enrollment.getCertificateReceivedDate(),
+                total,
+                paid,
+                total.subtract(paid),
+                enrollment.isPrimaryCourse());
     }
 
     private LearningProgressResponse toProgressResponse(LearningProgress p) {
