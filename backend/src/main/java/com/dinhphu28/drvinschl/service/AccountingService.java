@@ -26,7 +26,12 @@ import com.dinhphu28.drvinschl.entity.StudentCourseEnrollment;
 import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.model.CreateStudentCourseEnrollmentRequest;
 import com.dinhphu28.drvinschl.model.CreateStudentAccountRequest;
+import com.dinhphu28.drvinschl.model.FuelRecordResponse;
+import com.dinhphu28.drvinschl.model.PaymentRecordResponse;
 import com.dinhphu28.drvinschl.model.PaymentRequest;
+import com.dinhphu28.drvinschl.model.SalaryRecordResponse;
+import com.dinhphu28.drvinschl.model.StudentCourseEnrollmentResponse;
+import com.dinhphu28.drvinschl.model.StudentProfileResponse;
 import com.dinhphu28.drvinschl.repository.CoursePackageRepository;
 import com.dinhphu28.drvinschl.repository.FuelRecordRepository;
 import com.dinhphu28.drvinschl.repository.LearningProgressRepository;
@@ -53,7 +58,7 @@ public class AccountingService {
     private final StudentCourseEnrollmentRepository studentCourseEnrollmentRepository;
 
     @Transactional
-    public Student createStudentAccount(CreateStudentAccountRequest request) {
+    public StudentProfileResponse createStudentAccount(CreateStudentAccountRequest request) {
         String username = resolveStudentUsername(request.username(), request.fullName());
         String password = hasText(request.password()) ? request.password().trim() : request.phone();
         String email = hasText(request.email()) ? request.email().trim() : null;
@@ -81,7 +86,14 @@ public class AccountingService {
         Student saved = studentRepository.save(student);
         createInitialEnrollment(saved);
         initLearningProgress(saved);
-        return saved;
+        return new StudentProfileResponse(
+                saved.getId(), saved.getFullName(), saved.getDob(), saved.getPhone(), saved.getCoursePackage(),
+                saved.getApplicationDate(), saved.getOpeningDate(), saved.getClosingDate(), saved.getSettlementDate(),
+                saved.getCertificateReceivedDate(), saved.isRegistrationFormSubmitted(), saved.isPhotoSubmitted(),
+                saved.isHealthCheckSubmitted(), saved.getHealthCheckSubmittedDate(), saved.isSecondFeePaid(),
+                saved.isFinalFeePaid(), false, saved.getTotalFee(), saved.getPaidFee(),
+                saved.getTotalFee().subtract(saved.getPaidFee() != null ? saved.getPaidFee() : BigDecimal.ZERO),
+                saved.getCourseStatus(), List.of());
     }
 
     private void createInitialEnrollment(Student student) {
@@ -120,7 +132,7 @@ public class AccountingService {
     }
 
     @Transactional
-    public StudentCourseEnrollment createStudentCourseEnrollment(CreateStudentCourseEnrollmentRequest request) {
+    public StudentCourseEnrollmentResponse createStudentCourseEnrollment(CreateStudentCourseEnrollmentRequest request) {
         Student student = studentRepository.findById(request.studentId())
                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
         if (studentCourseEnrollmentRepository.existsByStudentAndCoursePackage(student, request.coursePackage())) {
@@ -146,7 +158,12 @@ public class AccountingService {
         student.setTotalFee((student.getTotalFee() != null ? student.getTotalFee() : BigDecimal.ZERO).add(totalFee));
         studentRepository.save(student);
         addPackageRequirementsToProgress(student, request.coursePackage());
-        return saved;
+        return new StudentCourseEnrollmentResponse(saved.getId(), saved.getCoursePackage(), saved.getCourseStatus(),
+                saved.getApplicationDate(), saved.getOpeningDate(), saved.getClosingDate(), saved.getSettlementDate(),
+                saved.getCertificateReceivedDate(), saved.getTotalFee(), saved.getPaidFee(),
+                (saved.getTotalFee() != null ? saved.getTotalFee() : BigDecimal.ZERO)
+                        .subtract(saved.getPaidFee() != null ? saved.getPaidFee() : BigDecimal.ZERO),
+                saved.isPrimaryCourse());
     }
 
     private void addPackageRequirementsToProgress(Student student, String coursePackage) {
@@ -230,7 +247,7 @@ public class AccountingService {
     }
 
     @Transactional
-    public PaymentRecord recordPayment(String recorderUsername, PaymentRequest request) {
+    public PaymentRecordResponse recordPayment(String recorderUsername, PaymentRequest request) {
         User recorder = userContextService.requireUser(recorderUsername);
         Student student = studentRepository.findById(request.studentId())
                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
@@ -257,19 +274,30 @@ public class AccountingService {
         }
         studentRepository.save(student);
 
-        return paymentRecordRepository.save(payment);
+        PaymentRecord saved = paymentRecordRepository.save(payment);
+        return new PaymentRecordResponse(saved.getId(), saved.getStudent().getId(), saved.getStudent().getFullName(),
+                saved.getPaymentType(), saved.getAmount(), saved.getPaidAt(), saved.getNote());
     }
 
-    public List<FuelRecord> getFuelByDateRange(LocalDate start, LocalDate end) {
-        return fuelRecordRepository.findByFuelDateBetween(start, end);
+    public List<FuelRecordResponse> getFuelByDateRange(LocalDate start, LocalDate end) {
+        return fuelRecordRepository.findByFuelDateBetween(start, end).stream()
+                .map(r -> new FuelRecordResponse(r.getId(), r.getVehicle().getId(), r.getVehicle().getLicensePlate(),
+                        r.getTeacher().getId(),
+                        r.getTeacher().getFirstName() + " " + (r.getTeacher().getLastName() != null ? r.getTeacher().getLastName() : ""),
+                        r.getFuelDate(), r.getLiters(), r.getReceiptUrl(), r.getAmount()))
+                .toList();
     }
 
-    public List<SalaryRecord> getAllSalaries() {
-        return salaryRecordRepository.findAll();
+    public List<SalaryRecordResponse> getAllSalaries() {
+        return salaryRecordRepository.findAll().stream()
+                .map(r -> new SalaryRecordResponse(r.getId(), r.getTeacher().getId(), r.getTeacher().getUsername(),
+                        r.getTeacher().getFirstName() + " " + (r.getTeacher().getLastName() != null ? r.getTeacher().getLastName() : ""),
+                        r.getMonth(), r.getBaseSalary(), r.getBonus(), r.getTotalAmount(), r.isApprovedByAdmin(), r.isApprovedByDirector()))
+                .toList();
     }
 
     @Transactional
-    public PaymentRecord recordRefund(String username, com.dinhphu28.drvinschl.model.RefundRequest request) {
+    public PaymentRecordResponse recordRefund(String username, com.dinhphu28.drvinschl.model.RefundRequest request) {
         User recorder = userContextService.requireUser(username);
         Student student = studentRepository.findById(request.studentId())
                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
@@ -286,7 +314,9 @@ public class AccountingService {
         student.setPaidFee(paid.subtract(request.amount()));
         studentRepository.save(student);
 
-        return paymentRecordRepository.save(payment);
+        PaymentRecord saved = paymentRecordRepository.save(payment);
+        return new PaymentRecordResponse(saved.getId(), saved.getStudent().getId(), saved.getStudent().getFullName(),
+                saved.getPaymentType(), saved.getAmount(), saved.getPaidAt(), saved.getNote());
     }
 
     public com.dinhphu28.drvinschl.model.FuelSummaryResponse getFuelSummary(int year, int month) {

@@ -25,6 +25,15 @@ import com.dinhphu28.drvinschl.entity.User;
 import com.dinhphu28.drvinschl.entity.Vehicle;
 import com.dinhphu28.drvinschl.entity.VehicleLog;
 import com.dinhphu28.drvinschl.exception.ResourceNotFoundException;
+import com.dinhphu28.drvinschl.model.FuelRecordResponse;
+import com.dinhphu28.drvinschl.model.LeaveRequestResponse;
+import com.dinhphu28.drvinschl.model.MaintenanceRecordResponse;
+import com.dinhphu28.drvinschl.model.StudentSummaryResponse;
+import com.dinhphu28.drvinschl.model.TrainingBookingResponse;
+import com.dinhphu28.drvinschl.model.TrainingSlotResponse;
+import com.dinhphu28.drvinschl.model.UserSummaryResponse;
+import com.dinhphu28.drvinschl.model.TrainingBookingResponse;
+import com.dinhphu28.drvinschl.model.VehicleResponse;
 import com.dinhphu28.drvinschl.repository.FuelRecordRepository;
 import com.dinhphu28.drvinschl.repository.LearningProgressRepository;
 import com.dinhphu28.drvinschl.repository.LeaveRequestRepository;
@@ -50,9 +59,11 @@ public class TeacherService {
     private final LearningProgressRepository learningProgressRepository;
     private final LeaveWorkflowConfigService leaveWorkflowConfigService;
 
-    public List<TrainingBooking> getSchedule(String username) {
+    public List<TrainingBookingResponse> getSchedule(String username) {
         User teacher = userContextService.requireUser(username);
-        return bookingRepository.findBySlotTeacher(teacher);
+        return bookingRepository.findBySlotTeacher(teacher).stream()
+                .map(this::toBookingResponse)
+                .toList();
     }
 
     @Transactional
@@ -124,7 +135,7 @@ public class TeacherService {
     }
 
     @Transactional
-    public FuelRecord recordFuel(String username, UUID vehicleId, LocalDate date,
+    public FuelRecordResponse recordFuel(String username, UUID vehicleId, LocalDate date,
             java.math.BigDecimal liters, String receiptUrl, java.math.BigDecimal amount) {
         User teacher = userContextService.requireUser(username);
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
@@ -137,7 +148,17 @@ public class TeacherService {
         record.setLiters(liters);
         record.setReceiptUrl(receiptUrl);
         record.setAmount(amount);
-        return fuelRecordRepository.save(record);
+        FuelRecord saved = fuelRecordRepository.save(record);
+        return new FuelRecordResponse(
+                saved.getId(),
+                saved.getVehicle().getId(),
+                saved.getVehicle().getLicensePlate(),
+                saved.getTeacher().getId(),
+                saved.getTeacher().getFirstName() + " " + (saved.getTeacher().getLastName() != null ? saved.getTeacher().getLastName() : ""),
+                saved.getFuelDate(),
+                saved.getLiters(),
+                saved.getReceiptUrl(),
+                saved.getAmount());
     }
 
     @Transactional
@@ -162,7 +183,7 @@ public class TeacherService {
     }
 
     @Transactional
-    public LeaveRequest requestLeave(String username, LocalDate start, LocalDate end, String reason) {
+    public LeaveRequestResponse requestLeave(String username, LocalDate start, LocalDate end, String reason) {
         leaveWorkflowConfigService.validateNewRequest(start, end, reason);
         User teacher = userContextService.requireUser(username);
         LeaveRequest request = new LeaveRequest();
@@ -171,7 +192,15 @@ public class TeacherService {
         request.setEndDate(end);
         request.setReason(reason);
         request.setStatus(LeaveStatus.PENDING);
-        return leaveRequestRepository.save(request);
+        LeaveRequest saved = leaveRequestRepository.save(request);
+        return new LeaveRequestResponse(
+                saved.getId(),
+                saved.getTeacher().getId(),
+                saved.getTeacher().getFirstName() + " " + (saved.getTeacher().getLastName() != null ? saved.getTeacher().getLastName() : ""),
+                saved.getStartDate(),
+                saved.getEndDate(),
+                saved.getReason(),
+                saved.getStatus());
     }
 
     @Transactional
@@ -194,7 +223,7 @@ public class TeacherService {
     }
 
     @Transactional
-    public MaintenanceRecord submitMaintenanceRequest(String username, UUID vehicleId, LocalDate maintenanceDate,
+    public MaintenanceRecordResponse submitMaintenanceRequest(String username, UUID vehicleId, LocalDate maintenanceDate,
             String description, BigDecimal cost) {
         userContextService.requireUser(username);
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
@@ -206,7 +235,16 @@ public class TeacherService {
         record.setDescription(description);
         record.setCost(cost);
         record.setApproved(false);
-        return maintenanceRecordRepository.save(record);
+        MaintenanceRecord saved = maintenanceRecordRepository.save(record);
+        return new MaintenanceRecordResponse(
+                saved.getId(),
+                saved.getVehicle().getId(),
+                saved.getVehicle().getLicensePlate(),
+                saved.getVehicle().getModel(),
+                saved.getMaintenanceDate(),
+                saved.getDescription(),
+                saved.getCost(),
+                saved.isApproved());
     }
 
     public Map<String, Object> getDashboardStats(String username) {
@@ -246,7 +284,7 @@ public class TeacherService {
         return stats;
     }
 
-    public Map<String, Object> getVehicleInfo(UUID vehicleId) {
+    public VehicleResponse getVehicleInfo(UUID vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
 
@@ -273,21 +311,40 @@ public class TeacherService {
         List<MaintenanceRecord> maintenanceHistory = maintenanceRecordRepository
                 .findByVehicleOrderByMaintenanceDateDesc(vehicle);
 
-        Map<String, Object> info = new java.util.LinkedHashMap<>();
-        info.put("vehicleId", vehicle.getId());
-        info.put("licensePlate", vehicle.getLicensePlate());
-        info.put("model", vehicle.getModel());
-        info.put("registrationExpiry", vehicle.getRegistrationExpiry());
-        info.put("learnerLicenseExpiry", vehicle.getLearnerLicenseExpiry());
-        info.put("insuranceExpiry", vehicle.getInsuranceExpiry());
-        info.put("mortgageInfo", vehicle.getMortgageInfo());
-        info.put("ownershipInfo", vehicle.getOwnershipInfo());
-        info.put("currentOdo", vehicle.getCurrentOdo());
-        info.put("isClean", vehicle.isClean());
-        info.put("active", vehicle.isActive());
-        info.put("kmThisMonth", kmThisMonth);
-        info.put("fuelThisMonth", fuelThisMonth);
-        info.put("maintenanceHistory", maintenanceHistory);
-        return info;
+        return new VehicleResponse(
+                vehicle.getId(),
+                vehicle.getLicensePlate(),
+                vehicle.getModel(),
+                vehicle.getRegistrationExpiry(),
+                vehicle.getLearnerLicenseExpiry(),
+                vehicle.getInsuranceExpiry(),
+                vehicle.getMortgageInfo(),
+                vehicle.getOwnershipInfo(),
+                vehicle.getCurrentOdo(),
+                vehicle.isClean(),
+                vehicle.isActive());
+    }
+
+    private TrainingBookingResponse toBookingResponse(TrainingBooking booking) {
+        return new TrainingBookingResponse(
+                booking.getId(),
+                booking.getStatus(),
+                booking.getTeacherRating(),
+                booking.getTeacherComment(),
+                new TrainingSlotResponse(
+                        booking.getSlot().getId(),
+                        booking.getSlot().getSessionType(),
+                        booking.getSlot().getStartTime(),
+                        booking.getSlot().getEndTime(),
+                        booking.getSlot().isAvailable(),
+                        booking.getSlot().getTeacher() == null ? null : new UserSummaryResponse(
+                                booking.getSlot().getTeacher().getId(),
+                                booking.getSlot().getTeacher().getFirstName(),
+                                booking.getSlot().getTeacher().getLastName()),
+                        booking.getSlot().getVehicle() == null ? null : new com.dinhphu28.drvinschl.model.VehicleSummaryResponse(
+                                booking.getSlot().getVehicle().getId(),
+                                booking.getSlot().getVehicle().getLicensePlate(),
+                                booking.getSlot().getVehicle().getModel())),
+                new StudentSummaryResponse(booking.getStudent().getId(), booking.getStudent().getFullName()));
     }
 }

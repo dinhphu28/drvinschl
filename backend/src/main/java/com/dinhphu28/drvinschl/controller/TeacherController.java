@@ -18,13 +18,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.dinhphu28.drvinschl.entity.FuelRecord;
-import com.dinhphu28.drvinschl.entity.LeaveRequest;
-import com.dinhphu28.drvinschl.entity.MaintenanceRecord;
-import com.dinhphu28.drvinschl.entity.SessionReport;
 import com.dinhphu28.drvinschl.entity.SessionType;
-import com.dinhphu28.drvinschl.entity.TrainingBooking;
-import com.dinhphu28.drvinschl.entity.VehicleLog;
+import com.dinhphu28.drvinschl.model.FuelRecordResponse;
+import com.dinhphu28.drvinschl.model.LeaveRequestResponse;
+import com.dinhphu28.drvinschl.model.MaintenanceRecordResponse;
+import com.dinhphu28.drvinschl.model.TrainingBookingResponse;
+import com.dinhphu28.drvinschl.model.VehicleResponse;
 import com.dinhphu28.drvinschl.model.LeaveWorkflowConfig;
 import com.dinhphu28.drvinschl.service.LeaveWorkflowConfigService;
 import com.dinhphu28.drvinschl.service.TeacherService;
@@ -40,12 +39,12 @@ public class TeacherController {
     private final LeaveWorkflowConfigService leaveWorkflowConfigService;
 
     @GetMapping("/schedule")
-    public List<TrainingBooking> getSchedule(@AuthenticationPrincipal UserDetails userDetails) {
+    public List<TrainingBookingResponse> getSchedule(@AuthenticationPrincipal UserDetails userDetails) {
         return teacherService.getSchedule(userDetails.getUsername());
     }
 
     @PostMapping("/sessions/{bookingId}/report")
-    public SessionReport submitReport(
+    public com.dinhphu28.drvinschl.entity.SessionReport submitReport(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID bookingId,
             @RequestParam SessionType type,
@@ -59,7 +58,7 @@ public class TeacherController {
     }
 
     @PostMapping("/fuel")
-    public FuelRecord recordFuel(
+    public FuelRecordResponse recordFuel(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam UUID vehicleId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -70,7 +69,7 @@ public class TeacherController {
     }
 
     @PostMapping("/vehicles/{vehicleId}/return")
-    public VehicleLog recordReturn(
+    public com.dinhphu28.drvinschl.entity.VehicleLog recordReturn(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID vehicleId,
             @RequestParam Integer odoReturn,
@@ -79,7 +78,7 @@ public class TeacherController {
     }
 
     @PostMapping("/leave")
-    public LeaveRequest requestLeave(
+    public LeaveRequestResponse requestLeave(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
@@ -93,7 +92,7 @@ public class TeacherController {
     }
 
     @PostMapping("/vehicles/{vehicleId}/departure")
-    public VehicleLog recordDeparture(
+    public com.dinhphu28.drvinschl.entity.VehicleLog recordDeparture(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID vehicleId,
             @RequestParam Integer odoDeparture,
@@ -105,7 +104,7 @@ public class TeacherController {
     }
 
     @PostMapping("/vehicles/{vehicleId}/maintenance-request")
-    public MaintenanceRecord submitMaintenanceRequest(
+    public MaintenanceRecordResponse submitMaintenanceRequest(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID vehicleId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate maintenanceDate,
@@ -121,7 +120,7 @@ public class TeacherController {
     }
 
     @GetMapping("/vehicle-info/{vehicleId}")
-    public Map<String, Object> getVehicleInfo(@PathVariable UUID vehicleId) {
+    public VehicleResponse getVehicleInfo(@PathVariable UUID vehicleId) {
         return teacherService.getVehicleInfo(vehicleId);
     }
 }

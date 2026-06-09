@@ -84,6 +84,12 @@ public class SchedulingService {
         return bookingRepository.findBySlotTeacher(teacher).stream().map(this::toBookingResponse).toList();
     }
 
+    public List<TrainingBookingResponse> getTeacherScheduleById(Integer teacherId) {
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
+        return bookingRepository.findBySlotTeacher(teacher).stream().map(this::toBookingResponse).toList();
+    }
+
     @Transactional
     public void rateTeacher(String username, UUID bookingId, Integer rating, String comment) {
         Student student = userContextService.requireStudent(username);
