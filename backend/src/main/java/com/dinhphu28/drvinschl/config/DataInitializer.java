@@ -21,6 +21,7 @@ import com.dinhphu28.drvinschl.repository.StudentCourseEnrollmentRepository;
 import com.dinhphu28.drvinschl.repository.StudentRepository;
 import com.dinhphu28.drvinschl.repository.SystemConfigRepository;
 import com.dinhphu28.drvinschl.repository.UserRepository;
+import com.dinhphu28.drvinschl.service.StudentService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -81,6 +82,7 @@ public class DataInitializer {
             upsertConfig("THI_LAI_MO_PHONG", "300000", "Phí thi lại mô phỏng");
             upsertConfig("THI_LAI_SA_HINH", "500000", "Phí thi lại sa hình");
             upsertConfig("THI_LAI_DUONG_TRUONG", "500000", "Phí thi lại đường trường");
+            upsertConfig(StudentService.SAT_HACH_INSTRUCTIONS_KEY, defaultSatHachInstructions(), "Hướng dẫn Thi Sát Hạch cho học viên");
         };
     }
 
@@ -124,6 +126,18 @@ public class DataInitializer {
             config.setDescription(desc);
             systemConfigRepository.save(config);
         }
+    }
+
+    private String defaultSatHachInstructions() {
+        return """
+                <h3>Hướng dẫn Thi Sát Hạch</h3>
+                <p>Học viên theo dõi lịch thi, giấy tờ cần mang theo và yêu cầu dự thi theo thông báo mới nhất của trung tâm.</p>
+                <ul>
+                  <li>Có mặt đúng giờ theo lịch thi được phân công.</li>
+                  <li>Mang CCCD/giấy tờ tùy thân hợp lệ và hồ sơ theo yêu cầu.</li>
+                  <li>Tuân thủ hướng dẫn của cán bộ coi thi và giáo vụ thi.</li>
+                </ul>
+                """;
     }
 
     private void deactivateLegacyPackage(String name) {

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {
-  Card, CardBody, CardHeader, Row, Col,
+  Card, CardBody, Row, Col,
   Form, FormGroup, Label, Input, Button, Table, Alert,
-  TabContent, TabPane, Nav, NavLink,
+  TabContent, TabPane,
 } from "reactstrap";
 import AppLayout from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
@@ -36,6 +36,14 @@ interface FuelSummary {
 }
 
 const coursePackageOptions = ["A", "A1", "B Số Sàn", "B Tự Động", "C1"];
+const accountingSidebarItems = [
+  { id: "1", label: "Tạo tài khoản" },
+  { id: "2", label: "Thêm khóa" },
+  { id: "3", label: "Thu phí" },
+  { id: "4", label: "Hoàn phí" },
+  { id: "5", label: "Xăng" },
+  { id: "6", label: "Lương" },
+];
 const emptyStudentForm = {
   email: "", fullName: "", phone: "", dob: "", coursePackage: "B Số Sàn", totalFee: "15000000",
 };
@@ -169,50 +177,15 @@ const AccountingPage = () => {
   const generatedStudentUsername = buildStudentUsername(studentForm.fullName);
 
   return (
-    <AppLayout title="Kế toán">
+    <AppLayout
+      title="Kế toán"
+      sidebarItems={accountingSidebarItems}
+      activeSidebarItem={activeTab}
+      onSidebarItemClick={toggleTab}
+    >
       {message && <Alert color="info" className="mb-3" dismissible onClose={() => setMessage("")}>{message}</Alert>}
 
       <Card className="content-card">
-        <CardHeader tag="div">
-          <Nav tabs>
-            <NavLink
-              className={activeTab === "1" ? "active" : ""}
-              onClick={() => toggleTab("1")}
-            >
-              Tạo tài khoản
-            </NavLink>
-            <NavLink
-              className={activeTab === "2" ? "active" : ""}
-              onClick={() => toggleTab("2")}
-            >
-              Thêm khóa
-            </NavLink>
-            <NavLink
-              className={activeTab === "3" ? "active" : ""}
-              onClick={() => toggleTab("3")}
-            >
-              Thu phí
-            </NavLink>
-            <NavLink
-              className={activeTab === "4" ? "active" : ""}
-              onClick={() => toggleTab("4")}
-            >
-              Hoàn phí
-            </NavLink>
-            <NavLink
-              className={activeTab === "5" ? "active" : ""}
-              onClick={() => toggleTab("5")}
-            >
-              Xăng
-            </NavLink>
-            <NavLink
-              className={activeTab === "6" ? "active" : ""}
-              onClick={() => toggleTab("6")}
-            >
-              Lương
-            </NavLink>
-          </Nav>
-        </CardHeader>
         <CardBody>
           <TabContent activeTab={activeTab}>
 

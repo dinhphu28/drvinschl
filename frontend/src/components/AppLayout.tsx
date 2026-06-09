@@ -8,6 +8,11 @@ interface NavItem {
   path: string;
 }
 
+interface SidebarSectionItem {
+  id: string;
+  label: string;
+}
+
 const roleNav: Partial<Record<Role, NavItem[]>> = {
   ADMIN: [
     { label: "Gói học", path: "/admin" },
@@ -57,9 +62,18 @@ const roleLabels: Record<Role, string> = {
 interface AppLayoutProps {
   title: string;
   children: React.ReactNode;
+  sidebarItems?: SidebarSectionItem[];
+  activeSidebarItem?: string;
+  onSidebarItemClick?: (id: string) => void;
 }
 
-const AppLayout: React.FC<AppLayoutProps> = ({ title, children }) => {
+const AppLayout: React.FC<AppLayoutProps> = ({
+  title,
+  children,
+  sidebarItems = [],
+  activeSidebarItem,
+  onSidebarItemClick,
+}) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const navItems = user ? roleNav[user.role] ?? [] : [];
@@ -75,6 +89,18 @@ const AppLayout: React.FC<AppLayoutProps> = ({ title, children }) => {
         <div className="app-sidebar-brand">Drvinschl</div>
         {user && <div className="app-sidebar-role">{roleLabels[user.role]}</div>}
         <nav className="app-sidebar-nav">
+          {sidebarItems.length > 0 && <div className="app-sidebar-section-label">Chức năng</div>}
+          {sidebarItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`app-sidebar-link app-sidebar-button${activeSidebarItem === item.id ? " active" : ""}`}
+              onClick={() => onSidebarItemClick?.(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+          {sidebarItems.length > 0 && navItems.length > 0 && <div className="app-sidebar-section-label app-sidebar-route-label">Trang</div>}
           {navItems.map((item) => (
             <NavLink
               key={item.path}

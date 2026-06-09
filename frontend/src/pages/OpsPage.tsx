@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-  Card, CardBody, CardHeader, Table, Row, Col,
+  Card, CardBody, Table, Row, Col,
   Form, FormGroup, Label, Input, Button, Alert,
   TabContent, TabPane, Nav, NavLink,
 } from "reactstrap";
@@ -13,6 +13,13 @@ import VehiclePicker from "../components/VehiclePicker";
 import api from "../api/axios";
 
 const SessionTypes = ["CO_BAN_4H", "CABIN", "DAT", "SA_HINH_THO", "SA_HINH_CAM_UNG"];
+const opsSidebarItems = [
+  { id: "1", label: "Đặt lịch" },
+  { id: "2", label: "Tạo lịch" },
+  { id: "3", label: "Phân bổ" },
+  { id: "4", label: "Cabin" },
+  { id: "5", label: "Hoàn thành khóa" },
+];
 
 interface Booking {
   id: string;
@@ -149,19 +156,15 @@ const OpsPage = () => {
   );
 
   return (
-    <AppLayout title="Giáo vụ">
+    <AppLayout
+      title="Giáo vụ"
+      sidebarItems={opsSidebarItems}
+      activeSidebarItem={activeTab}
+      onSidebarItemClick={toggleTab}
+    >
       {message && <Alert color="success" className="mb-3" dismissible onClose={() => setMessage("")}>{message}</Alert>}
 
       <Card className="content-card">
-        <CardHeader tag="div">
-          <Nav tabs>
-            <NavLink className={activeTab === "1" ? "active" : ""} onClick={() => toggleTab("1")}>Đặt lịch</NavLink>
-            <NavLink className={activeTab === "2" ? "active" : ""} onClick={() => toggleTab("2")}>Tạo lịch</NavLink>
-            <NavLink className={activeTab === "3" ? "active" : ""} onClick={() => toggleTab("3")}>Phân bổ</NavLink>
-            <NavLink className={activeTab === "4" ? "active" : ""} onClick={() => toggleTab("4")}>Cabin</NavLink>
-            <NavLink className={activeTab === "5" ? "active" : ""} onClick={() => toggleTab("5")}>Hoàn thành khóa</NavLink>
-          </Nav>
-        </CardHeader>
         <CardBody>
           <TabContent activeTab={activeTab}>
 

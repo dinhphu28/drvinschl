@@ -362,10 +362,10 @@ const TabVehicles = () => {
 };
 
 const tabItems = [
-  { label: "Duyệt nghỉ phép", component: TabLeave },
-  { label: "Duyệt bảo dưỡng", component: TabMaintenance },
-  { label: "Tính lương", component: TabSalary },
-  { label: "Quản lý xe", component: TabVehicles },
+  { id: "leave", label: "Duyệt nghỉ phép", component: TabLeave },
+  { id: "maintenance", label: "Duyệt bảo dưỡng", component: TabMaintenance },
+  { id: "salary", label: "Tính lương", component: TabSalary },
+  { id: "vehicles", label: "Quản lý xe", component: TabVehicles },
 ];
 
 const AreaManagerPage = () => {
@@ -373,20 +373,15 @@ const AreaManagerPage = () => {
   const ActiveComponent = tabItems[activeTab].component;
 
   return (
-    <AppLayout title="Quản lý khu vực">
-      <ul className="nav nav-tabs mb-3">
-        {tabItems.map((tab, idx) => (
-          <li className="nav-item" key={tab.label}>
-            <button
-              className={`nav-link ${idx === activeTab ? "active" : ""}`}
-              onClick={() => setActiveTab(idx)}
-              type="button"
-            >
-              {tab.label}
-            </button>
-          </li>
-        ))}
-      </ul>
+    <AppLayout
+      title="Quản lý khu vực"
+      sidebarItems={tabItems.map(({ id, label }) => ({ id, label }))}
+      activeSidebarItem={tabItems[activeTab].id}
+      onSidebarItemClick={(id) => {
+        const index = tabItems.findIndex((item) => item.id === id);
+        if (index >= 0) setActiveTab(index);
+      }}
+    >
       <ActiveComponent />
     </AppLayout>
   );
