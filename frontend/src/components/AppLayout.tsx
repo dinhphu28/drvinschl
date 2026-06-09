@@ -38,6 +38,9 @@ const roleNav: Partial<Record<Role, NavItem[]>> = {
   GIAO_VIEN: [
     { label: "Lịch dạy", path: "/teacher" },
   ],
+  XE: [
+    { label: "Xe", path: "/admin" },
+  ],
   QUAN_LY_KHU_VUC: [
     { label: "Khu vực", path: "/area-manager" },
   ],
@@ -54,6 +57,7 @@ const roleLabels: Record<Role, string> = {
   GIAO_VU_SA_HINH: "Giáo vụ sa hình",
   GIAO_VU_THI: "Giáo vụ thi",
   GIAO_VIEN: "Giáo viên",
+  XE: "Xe / quản lý xe",
   QUAN_LY_KHU_VUC: "Quản lý khu vực",
   ADMIN: "Quản trị",
   GIAM_DOC: "Giám đốc",

@@ -154,6 +154,12 @@ const OpsPage = () => {
   const filteredBookings = bookings.filter(
     (b) => !bookingFilter || b.slot?.sessionType === bookingFilter
   );
+  const assignSlotOptions = allSlots.length ? allSlots : bookings.map((b) => ({
+    id: b.slot?.startTime ? `${b.slot.sessionType}-${b.slot.startTime}` : b.id,
+    sessionType: b.slot?.sessionType,
+    startTime: b.slot?.startTime,
+    endTime: b.slot?.endTime,
+  })) as any[];
 
   return (
     <AppLayout
@@ -291,7 +297,17 @@ const OpsPage = () => {
             {/* Tab 3: Phân bổ */}
             <TabPane tabId="3">
               <Form onSubmit={handleAssignResources}>
-                <FormGroup><Label>ID buổi học (UUID)</Label><Input value={assignForm.slotId} onChange={(e) => setAssignForm({ ...assignForm, slotId: e.target.value })} required /></FormGroup>
+                <FormGroup>
+                  <Label>Buổi học</Label>
+                  <Input type="select" value={assignForm.slotId} onChange={(e) => setAssignForm({ ...assignForm, slotId: e.target.value })} required>
+                    <option value="">-- Chọn buổi học --</option>
+                    {assignSlotOptions.map((slot) => (
+                      <option key={slot.id} value={slot.id}>
+                        {slot.sessionType?.replace(/_/g, " ")} - {slot.startTime ? new Date(slot.startTime).toLocaleString("vi-VN") : "—"}
+                      </option>
+                    ))}
+                  </Input>
+                </FormGroup>
                 <Row>
                   <Col md="6"><FormGroup><Label>Giáo viên</Label><StaffPicker value={assignForm.teacherId} onChange={(teacherId) => setAssignForm({ ...assignForm, teacherId })} required /></FormGroup></Col>
                   <Col md="6"><FormGroup><Label>Xe</Label><VehiclePicker value={assignForm.vehicleId} onChange={(vehicleId) => setAssignForm({ ...assignForm, vehicleId })} required /></FormGroup></Col>
@@ -326,7 +342,19 @@ const OpsPage = () => {
               <h5 className="mb-3">Phân bổ học viên vào cabin</h5>
               <Form onSubmit={handleAssignCabinStudent}>
                 <Row>
-                  <Col md="6"><FormGroup><Label>ID lịch cabin (UUID)</Label><Input value={cabinAssign.slotId} onChange={(e) => setCabinAssign({ ...cabinAssign, slotId: e.target.value })} required /></FormGroup></Col>
+                  <Col md="6">
+                    <FormGroup>
+                      <Label>Lịch cabin</Label>
+                      <Input type="select" value={cabinAssign.slotId} onChange={(e) => setCabinAssign({ ...cabinAssign, slotId: e.target.value })} required>
+                        <option value="">-- Chọn lịch cabin --</option>
+                        {cabinSlots.map((slot) => (
+                          <option key={slot.id} value={slot.id}>
+                            {slot.sessionType?.replace(/_/g, " ")} - {new Date(slot.startTime).toLocaleString("vi-VN")}
+                          </option>
+                        ))}
+                      </Input>
+                    </FormGroup>
+                  </Col>
                   <Col md="6"><FormGroup><Label>Học viên</Label><StudentPicker value={cabinAssign.studentId} onChange={(studentId) => setCabinAssign({ ...cabinAssign, studentId })} required /></FormGroup></Col>
                 </Row>
                 <Button color="primary">Phân bổ</Button>

@@ -8,6 +8,7 @@ export const roleRoutes: Record<Role, string> = {
   GIAO_VU_SA_HINH: "/ops",
   GIAO_VU_THI: "/exams",
   GIAO_VIEN: "/teacher",
+  XE: "/admin",
   QUAN_LY_KHU_VUC: "/area-manager",
   ADMIN: "/admin",
   GIAM_DOC: "/director",

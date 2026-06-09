@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class VehicleController {
     private final VehicleService vehicleService;
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY_KHU_VUC', 'GIAO_VU_KHU_VUC', 'GIAO_VIEN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY_KHU_VUC', 'GIAO_VU_KHU_VUC', 'GIAO_VIEN', 'XE')")
     @GetMapping
     public List<Vehicle> getAllVehicles() {
         return vehicleService.getAllVehicles();
@@ -35,13 +35,13 @@ public class VehicleController {
         return vehicleService.createVehicle(vehicle);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY_KHU_VUC', 'GIAO_VIEN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY_KHU_VUC', 'GIAO_VIEN', 'XE')")
     @GetMapping("/{id}")
     public Vehicle getVehicle(@PathVariable UUID id) {
         return vehicleService.getVehicle(id);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY_KHU_VUC')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY_KHU_VUC', 'XE')")
     @PostMapping("/{id}/maintenance")
     public MaintenanceRecord addMaintenance(@PathVariable UUID id, @RequestBody MaintenanceRecord record) {
         return vehicleService.addMaintenance(id, record);

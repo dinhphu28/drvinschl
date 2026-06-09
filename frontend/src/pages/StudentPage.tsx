@@ -177,6 +177,7 @@ const progressModules = [
 type ProgressModule = (typeof progressModules)[number];
 
 const studentSidebarItems = [
+  { id: "0", label: "Thông tin cơ bản" },
   { id: "1", label: "Tiến độ" },
   { id: "2", label: "Đặt lịch" },
   { id: "3", label: "Học phí" },
@@ -401,99 +402,100 @@ const StudentPage = () => {
     >
       <div className="student-page">
         {message && <div className="alert alert-success alert-dismissible fade show mt-2">{message}</div>}
-        <Row className="g-3 mb-4">
-          <Col lg="5">
-            <Card className="content-card student-summary-card h-100">
-              <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div className="fw-semibold">Thông tin cá nhân</div>
-                {missingBasicInfo && <Badge color="warning">Cần bổ sung</Badge>}
-              </CardHeader>
-              <CardBody>
-                <Form onSubmit={handleUpdateProfile}>
-                  <FormGroup>
-                    <Label>Họ tên</Label>
-                    <Input
-                      value={profileForm.fullName}
-                      onChange={(e) => handleProfileFormChange("fullName", e.target.value)}
-                      placeholder="Nhập họ tên"
-                    />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Ngày sinh</Label>
-                    <Input
-                      type="date"
-                      value={profileForm.dob}
-                      onChange={(e) => handleProfileFormChange("dob", e.target.value)}
-                    />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Điện thoại</Label>
-                    <Input
-                      value={profileForm.phone}
-                      onChange={(e) => handleProfileFormChange("phone", e.target.value)}
-                      placeholder="Nhập số điện thoại"
-                    />
-                  </FormGroup>
-                  <Button color="primary" type="submit">Lưu thông tin</Button>
-                </Form>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col lg="7">
-            <Card className="content-card student-summary-card h-100">
-              <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div className="fw-semibold">Các khóa học và hồ sơ</div>
-                {profile && <Badge color="primary">{profile.courseStatus?.replace(/_/g, " ")}</Badge>}
-              </CardHeader>
-              <CardBody>
-                {profile ? (
-                  <>
-                    <Row className="g-3 student-summary-grid mb-3">
-                      <Col md="6"><div className="student-summary-item"><div className="text-muted small">Ngày nộp Khám Sức Khỏe</div><div className="fw-semibold">{profile.healthCheckSubmitted ? formatDate(profile.healthCheckSubmittedDate) : "Chưa nộp"}</div></div></Col>
-                      <Col md="6"><div className="student-summary-item"><div className="text-muted small">Hồ sơ</div><div className="fw-semibold">{profile.registrationFormSubmitted && profile.photoSubmitted ? "Đã đủ đơn và ảnh" : "Cần bổ sung"}</div></div></Col>
-                    </Row>
-                    {courseEnrollments.length === 0 ? (
-                      <EmptyState message="Chưa có khóa học" />
-                    ) : (
-                      <div className="d-flex flex-column gap-3">
-                        {courseEnrollments.map((course, index) => (
-                          <div className="student-summary-item" key={course.id ?? `${course.coursePackage}-${index}`}>
-                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                              <div className="fw-semibold">{course.coursePackage || "—"}</div>
-                              <div className="d-flex gap-2 flex-wrap">
-                                {course.primaryCourse && <Badge color="secondary">Khóa chính</Badge>}
-                                {course.courseStatus && <StatusBadge status={course.courseStatus} />}
-                              </div>
-                            </div>
-                            <Row className="g-2">
-                              <Col md="6"><div className="text-muted small">Ngày nộp hồ sơ</div><div>{formatDate(course.applicationDate)}</div></Col>
-                              <Col md="6"><div className="text-muted small">Ngày khai giảng</div><div>{formatDate(course.openingDate)}</div></Col>
-                              <Col md="6"><div className="text-muted small">Ngày bế giảng</div><div>{formatDate(course.closingDate)}</div></Col>
-                              <Col md="6"><div className="text-muted small">Ngày thanh lý hồ sơ</div><div>{formatDate(course.settlementDate)}</div></Col>
-                              <Col md="6"><div className="text-muted small">Nhận bằng</div><div>{course.certificateReceivedDate ? formatDate(course.certificateReceivedDate) : "Chưa có thông tin"}</div></Col>
-                              <Col md="6"><div className="text-muted small">Học phí khóa</div><div>{Number(course.totalFee ?? 0).toLocaleString("vi-VN")} đ</div></Col>
-                            </Row>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <EmptyState message="Chưa có thông tin khóa học" />
-                )}
-              </CardBody>
-            </Card>
-          </Col>
-        </Row>
-        {profile?.tuitionReminder && (
-          <div className="alert alert-warning">
-            Học phí còn lại: {Number(profile.remainingFee).toLocaleString("vi-VN")} đ. Vui lòng hoàn tất theo lịch thu phí của trung tâm.
-          </div>
-        )}
-
         <Card className="content-card student-workspace-card">
           <CardBody className="py-2">
             <TabContent activeTab={activeTab}>
+            <TabPane tabId="0">
+              <Row className="g-3 mb-4">
+                <Col lg="5">
+                  <Card className="content-card student-summary-card h-100">
+                    <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                      <div className="fw-semibold">Thông tin cá nhân</div>
+                      {missingBasicInfo && <Badge color="warning">Cần bổ sung</Badge>}
+                    </CardHeader>
+                    <CardBody>
+                      <Form onSubmit={handleUpdateProfile}>
+                        <FormGroup>
+                          <Label>Họ tên</Label>
+                          <Input
+                            value={profileForm.fullName}
+                            onChange={(e) => handleProfileFormChange("fullName", e.target.value)}
+                            placeholder="Nhập họ tên"
+                          />
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>Ngày sinh</Label>
+                          <Input
+                            type="date"
+                            value={profileForm.dob}
+                            onChange={(e) => handleProfileFormChange("dob", e.target.value)}
+                          />
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>Điện thoại</Label>
+                          <Input
+                            value={profileForm.phone}
+                            onChange={(e) => handleProfileFormChange("phone", e.target.value)}
+                            placeholder="Nhập số điện thoại"
+                          />
+                        </FormGroup>
+                        <Button color="primary" type="submit">Lưu thông tin</Button>
+                      </Form>
+                    </CardBody>
+                  </Card>
+                </Col>
+                <Col lg="7">
+                  <Card className="content-card student-summary-card h-100">
+                    <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                      <div className="fw-semibold">Các khóa học và hồ sơ</div>
+                      {profile && <Badge color="primary">{profile.courseStatus?.replace(/_/g, " ")}</Badge>}
+                    </CardHeader>
+                    <CardBody>
+                      {profile ? (
+                        <>
+                          <Row className="g-3 student-summary-grid mb-3">
+                            <Col md="6"><div className="student-summary-item"><div className="text-muted small">Ngày nộp Khám Sức Khỏe</div><div className="fw-semibold">{profile.healthCheckSubmitted ? formatDate(profile.healthCheckSubmittedDate) : "Chưa nộp"}</div></div></Col>
+                            <Col md="6"><div className="student-summary-item"><div className="text-muted small">Hồ sơ</div><div className="fw-semibold">{profile.registrationFormSubmitted && profile.photoSubmitted ? "Đã đủ đơn và ảnh" : "Cần bổ sung"}</div></div></Col>
+                          </Row>
+                          {courseEnrollments.length === 0 ? (
+                            <EmptyState message="Chưa có khóa học" />
+                          ) : (
+                            <div className="d-flex flex-column gap-3">
+                              {courseEnrollments.map((course, index) => (
+                                <div className="student-summary-item" key={course.id ?? `${course.coursePackage}-${index}`}>
+                                  <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                    <div className="fw-semibold">{course.coursePackage || "—"}</div>
+                                    <div className="d-flex gap-2 flex-wrap">
+                                      {course.primaryCourse && <Badge color="secondary">Khóa chính</Badge>}
+                                      {course.courseStatus && <StatusBadge status={course.courseStatus} />}
+                                    </div>
+                                  </div>
+                                  <Row className="g-2">
+                                    <Col md="6"><div className="text-muted small">Ngày nộp hồ sơ</div><div>{formatDate(course.applicationDate)}</div></Col>
+                                    <Col md="6"><div className="text-muted small">Ngày khai giảng</div><div>{formatDate(course.openingDate)}</div></Col>
+                                    <Col md="6"><div className="text-muted small">Ngày bế giảng</div><div>{formatDate(course.closingDate)}</div></Col>
+                                    <Col md="6"><div className="text-muted small">Ngày thanh lý hồ sơ</div><div>{formatDate(course.settlementDate)}</div></Col>
+                                    <Col md="6"><div className="text-muted small">Nhận bằng</div><div>{course.certificateReceivedDate ? formatDate(course.certificateReceivedDate) : "Chưa có thông tin"}</div></Col>
+                                    <Col md="6"><div className="text-muted small">Học phí khóa</div><div>{Number(course.totalFee ?? 0).toLocaleString("vi-VN")} đ</div></Col>
+                                  </Row>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <EmptyState message="Chưa có thông tin khóa học" />
+                      )}
+                    </CardBody>
+                  </Card>
+                </Col>
+              </Row>
+              {profile?.tuitionReminder && (
+                <div className="alert alert-warning">
+                  Học phí còn lại: {Number(profile.remainingFee).toLocaleString("vi-VN")} đ. Vui lòng hoàn tất theo lịch thu phí của trung tâm.
+                </div>
+              )}
+            </TabPane>
             <TabPane tabId="1">
               <Card className="mt-3">
                 <CardHeader>Tiến độ học</CardHeader>

@@ -143,6 +143,7 @@ const roleEntries = [
   { value: "KINH_DOANH", label: "Kinh doanh" }, { value: "KE_TOAN", label: "Kế toán" },
   { value: "GIAO_VU_KHU_VUC", label: "Giáo vụ khu vực" }, { value: "GIAO_VU_SA_HINH", label: "Giáo vụ sa hình" },
   { value: "GIAO_VU_THI", label: "Giáo vụ thi" }, { value: "GIAO_VIEN", label: "Giáo viên" },
+  { value: "XE", label: "Xe / quản lý xe" },
   { value: "QUAN_LY_KHU_VUC", label: "Quản lý khu vực" }, { value: "GIAM_DOC", label: "Giám đốc" }, { value: "ADMIN", label: "Admin" },
 ];
 const AdminPage = () => {

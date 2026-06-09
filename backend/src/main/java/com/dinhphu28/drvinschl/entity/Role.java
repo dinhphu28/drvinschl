@@ -19,6 +19,7 @@ public enum Role {
     GIAO_VU_SA_HINH(Collections.emptySet()),
     GIAO_VU_THI(Collections.emptySet()),
     GIAO_VIEN(Collections.emptySet()),
+    XE(Collections.emptySet()),
     QUAN_LY_KHU_VUC(Collections.emptySet()),
     ADMIN(
             Set.of(

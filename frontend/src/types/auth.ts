@@ -6,6 +6,7 @@ export type Role =
   | "GIAO_VU_SA_HINH"
   | "GIAO_VU_THI"
   | "GIAO_VIEN"
+  | "XE"
   | "QUAN_LY_KHU_VUC"
   | "ADMIN"
   | "GIAM_DOC";

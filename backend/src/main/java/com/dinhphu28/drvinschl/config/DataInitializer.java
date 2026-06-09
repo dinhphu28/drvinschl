@@ -53,6 +53,7 @@ public class DataInitializer {
                 createUser("giaovu", "ops@drvinschl.local", "Giao", "Vu", Role.GIAO_VU_KHU_VUC);
                 createUser("giaovuthi", "exam@drvinschl.local", "Giao", "Vu Thi", Role.GIAO_VU_THI);
                 createUser("quanly", "manager@drvinschl.local", "Quan", "Ly", Role.QUAN_LY_KHU_VUC);
+                createUser("xe", "vehicle@drvinschl.local", "Xe", "Quan Ly", Role.XE);
                 createUser("giamdoc", "director@drvinschl.local", "Giam", "Doc", Role.GIAM_DOC);
 
                 User studentUser = createUser("hocvien", "student@drvinschl.local", "Nguyen", "Van A", Role.HOC_VIEN);
