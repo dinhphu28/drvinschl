@@ -22,18 +22,38 @@ Hệ thống quản lý trường dạy lái xe theo `REQUIREMENT_SPECIFICATION.
 - **ADMIN** — Web: cấu hình hệ thống
 - **GIAM_DOC** — Web: thống kê, duyệt lương
 
-## Chạy Backend
+## Chạy nhanh bằng Makefile
+
+Các lệnh này tự dùng `backend/.env` cho backend và Docker Compose.
+
+```bash
+make db        # Chỉ start PostgreSQL
+make db-fresh  # Xóa volume DB và tạo DB mới
+make backend   # Start DB rồi chạy backend
+make frontend  # Chạy frontend
+make all       # Start DB, backend và frontend
+make stop      # Stop Docker services
+make ps        # Xem trạng thái Docker services
+make test      # Backend test + frontend build
+```
+
+Web: http://localhost:5173  
+API: http://localhost:8080  
+Swagger: http://localhost:8080/swagger-ui.html
+
+## Chạy Backend thủ công
 
 ```bash
 cd backend
 docker compose up -d db
+source .env
 ./gradlew bootRun
 ```
 
 API: http://localhost:8080  
 Swagger: http://localhost:8080/swagger-ui.html
 
-## Chạy Frontend (Web)
+## Chạy Frontend thủ công (Web)
 
 ```bash
 cd frontend
