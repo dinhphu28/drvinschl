@@ -223,11 +223,19 @@ Xem các khung giờ còn trống.
 
 ------
 
-## UC-031 Xác Nhận Lịch Học
+## UC-031 Điều Phối Lịch Học
 
 **Actor**
 
 - Giáo vụ
+
+**Mục tiêu**
+
+Giáo vụ xem, điều phối, phân công giáo viên, phân công xe hoặc điều chỉnh lịch học khi cần.
+
+**Ghi chú**
+
+Lịch học viên đặt không cần giáo vụ xác nhận để có hiệu lực.
 
 ------
 
@@ -279,6 +287,12 @@ Xem các khung giờ còn trống.
 **Actor**
 
 - Giáo viên
+
+**Ghi chú nghiệp vụ**
+
+- Dữ liệu DAT được nhập tay.
+- Ảnh DAT không bắt buộc.
+- Không tích hợp thiết bị DAT trong phiên bản đầu tiên.
 
 ------
 
@@ -390,6 +404,11 @@ Xem các khung giờ còn trống.
 
 ## UC-056 Điểm Danh Đầu Ngày
 
+**Ghi chú nghiệp vụ**
+
+- Giáo viên bắt buộc chụp hình xe trước khi sử dụng xe.
+
+
 ## UC-057 Khai Báo ODO Đi
 
 ## UC-058 Khai Báo ODO Về
@@ -444,7 +463,27 @@ Xem các khung giờ còn trống.
 
 ## UC-077 Cấu Hình Công Thức Lương
 
-## UC-078 Tính Lương Giáo Viên
+## UC-078 Tổng Hợp Giờ Dạy Giáo Viên
+
+**Actor**
+
+- Admin
+- Quản lý khu vực
+
+**Mục tiêu**
+
+Tổng hợp giờ dạy của giáo viên theo nhóm:
+
+- T2-T6
+- T7-CN
+- Đêm
+- Cảm ứng tập
+- Cảm ứng thi
+
+**Ghi chú**
+
+Phiên bản đầu tiên chưa tính lương tự động thành tiền.
+
 
 ## UC-079 Xem Bảng Lương
 
@@ -523,3 +562,34 @@ Xem các khung giờ còn trống.
 ## UC-108 Xem Nhật Ký Hệ Thống
 
 ## UC-109 Quản Lý Audit Log
+
+## UC-110 Đổi Mật Khẩu
+
+**Actor**
+
+- Học viên
+- Nhân viên
+- Giáo viên
+- Admin
+
+**Mục tiêu**
+
+Người dùng đổi mật khẩu sau khi đăng nhập.
+
+---
+
+## UC-111 Admin Reset Mật Khẩu
+
+**Actor**
+
+- Admin
+
+**Mục tiêu**
+
+Admin reset mật khẩu cho người dùng khi người dùng quên mật khẩu.
+
+**Ghi chú**
+
+Phiên bản đầu tiên không hỗ trợ quên mật khẩu tự động.
+
+

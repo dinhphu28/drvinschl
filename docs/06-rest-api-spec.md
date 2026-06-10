@@ -72,6 +72,31 @@ Làm mới access token.
 
 Đăng xuất.
 
+## PUT /auth/change-password
+
+Người dùng đổi mật khẩu sau khi đăng nhập.
+
+Request:
+
+```json
+{
+  "oldPassword": "string",
+  "newPassword": "string"
+}
+```
+
+## PUT /users/{id}/reset-password
+
+Admin reset mật khẩu cho người dùng.
+
+Request:
+
+```json
+{
+  "newPassword": "string"
+}
+```
+
 ------
 
 # Student

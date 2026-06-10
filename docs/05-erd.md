@@ -153,20 +153,25 @@ Status:
 
 ## student_documents
 
-| Column        | Type        | Note           |
-| ------------- | ----------- | -------------- |
-| id            | UUID        | PK             |
-| student_id    | UUID        | FK students.id |
-| document_type | VARCHAR(50) |                |
-| file_url      | TEXT        |                |
-| uploaded_at   | TIMESTAMP   |                |
+| Column        | Type         | Note           |
+| ------------- | ------------ | -------------- |
+| id            | UUID         | PK             |
+| student_id    | UUID         | FK students.id |
+| document_name | VARCHAR(255) |                |
+| document_type | VARCHAR(50)  | NULL           |
+| file_url      | TEXT         | NULL           |
+| note          | TEXT         | NULL           |
+| uploaded_by   | UUID         | FK users.id    |
+| uploaded_at   | TIMESTAMP    |                |
+| created_at    | TIMESTAMP    |                |
+| updated_at    | TIMESTAMP    |                |
+| deleted_at    | TIMESTAMP    | NULL           |
 
-Document type:
+Ghi chú:
 
-- APPLICATION_FORM
-- PHOTO
-- HEALTH_CERTIFICATE
-- CONTRACT
+- `file_url` cho phép NULL.
+- `note` cho phép NULL.
+- Một hồ sơ có thể chỉ có ghi chú, chỉ có file, hoặc có cả hai.
 
 ------
 
@@ -234,6 +239,24 @@ Payment type:
 - EXTRA_PRACTICE
 - RETAKE_EXAM
 
+## payment_receipts
+
+Phiếu thu thanh toán.
+
+| Column     | Type        | Note           |
+| ---------- | ----------- | -------------- |
+| id         | UUID        | PK             |
+| payment_id | UUID        | FK payments.id |
+| receipt_no | VARCHAR(50) | UNIQUE         |
+| pdf_url    | TEXT        | NULL           |
+| issued_at  | TIMESTAMP   |                |
+| issued_by  | UUID        | FK users.id    |
+
+Ghi chú:
+
+- Hệ thống cần hỗ trợ in phiếu thu.
+- Hệ thống cần hỗ trợ xuất PDF phiếu thu.
+
 ------
 
 ## refunds
@@ -251,7 +274,15 @@ Payment type:
 
 # 6. Scheduling
 
+> Decision:
+>
+> Học viên đặt lịch không cần giáo vụ xác nhận.
+> Vì vậy, lịch học chính thức được lưu trực tiếp trong bảng `schedules`.
+> Bảng `bookings` không bắt buộc trong MVP.
+
 ## bookings
+
+> deperecated
 
 Yêu cầu đặt lịch từ học viên.
 
@@ -287,30 +318,34 @@ Status:
 
 ## schedules
 
-Lịch đã được giáo vụ xác nhận.
+Lịch học chính thức của học viên.
 
-| Column        | Type        | Note                 |
-| ------------- | ----------- | -------------------- |
-| id            | UUID        | PK                   |
-| booking_id    | UUID        | FK bookings.id, NULL |
-| student_id    | UUID        | FK students.id       |
-| teacher_id    | UUID        | FK teachers.id, NULL |
-| vehicle_id    | UUID        | FK vehicles.id, NULL |
-| cabin_id      | UUID        | FK cabins.id, NULL   |
-| schedule_type | VARCHAR(50) |                      |
-| schedule_date | DATE        |                      |
-| start_time    | TIME        |                      |
-| end_time      | TIME        |                      |
-| status        | VARCHAR(30) |                      |
-| created_by    | UUID        | FK users.id          |
+| Column        | Type        | Note                                 |
+| ------------- | ----------- | ------------------------------------ |
+| id            | UUID        | PK                                   |
+| student_id    | UUID        | FK students.id                       |
+| enrollment_id | UUID        | FK enrollments.id                    |
+| teacher_id    | UUID        | FK teachers.id, NULL                 |
+| vehicle_id    | UUID        | FK vehicles.id, NULL                 |
+| cabin_id      | UUID        | FK cabins.id, NULL                   |
+| schedule_type | VARCHAR(50) | BASIC, CABIN, DAT, YARD, SENSOR_YARD |
+| schedule_date | DATE        |                                      |
+| start_time    | TIME        |                                      |
+| end_time      | TIME        |                                      |
+| status        | VARCHAR(30) |                                      |
+| created_by    | UUID        | FK users.id                          |
+| created_at    | TIMESTAMP   |                                      |
+| updated_at    | TIMESTAMP   |                                      |
+| deleted_at    | TIMESTAMP   | NULL                                 |
 
 Status:
 
-- PLANNED
-- CONFIRMED
-- IN_PROGRESS
-- COMPLETED
+- BOOKED
 - CANCELLED
+- IN_PROGRESS
+- TEACHER_COMPLETED
+- STUDENT_CONFIRMED
+- COMPLETED
 
 ------
 
@@ -360,10 +395,16 @@ Session type:
 | Column              | Type          | Note                        |
 | ------------------- | ------------- | --------------------------- |
 | training_session_id | UUID          | PK, FK training_sessions.id |
-| start_km            | NUMERIC(10,2) |                             |
-| end_km              | NUMERIC(10,2) |                             |
+| km                  | NUMERIC(10,2) | NULL                        |
+| duration_minutes    | INT           | NULL                        |
+| note                | TEXT          | NULL                        |
 | dat_start_image_url | TEXT          | NULL                        |
 | dat_end_image_url   | TEXT          | NULL                        |
+
+Ghi chú:
+
+- Dữ liệu DAT nhập tay.
+- Ảnh DAT không bắt buộc.
 
 ------
 
@@ -575,18 +616,25 @@ Document type:
 
 ## vehicle_usages
 
-| Column       | Type          | Note           |
-| ------------ | ------------- | -------------- |
-| id           | UUID          | PK             |
-| vehicle_id   | UUID          | FK vehicles.id |
-| teacher_id   | UUID          | FK teachers.id |
-| usage_date   | DATE          |                |
-| odo_start    | NUMERIC(12,2) |                |
-| odo_end      | NUMERIC(12,2) | NULL           |
-| started_at   | TIMESTAMP     |                |
-| ended_at     | TIMESTAMP     | NULL           |
-| clean_status | VARCHAR(30)   | NULL           |
-| image_url    | TEXT          | NULL           |
+| Column          | Type          | Note           |
+| --------------- | ------------- | -------------- |
+| id              | UUID          | PK             |
+| vehicle_id      | UUID          | FK vehicles.id |
+| teacher_id      | UUID          | FK teachers.id |
+| usage_date      | DATE          |                |
+| odo_start       | NUMERIC(12,2) | NULL           |
+| odo_end         | NUMERIC(12,2) | NULL           |
+| started_at      | TIMESTAMP     |                |
+| ended_at        | TIMESTAMP     | NULL           |
+| start_image_url | TEXT          | NOT NULL       |
+| end_image_url   | TEXT          | NULL           |
+| clean_status    | VARCHAR(30)   | NULL           |
+
+Ghi chú:
+
+- Ảnh xe trước khi sử dụng là bắt buộc.
+- ODO đầu/cuối không bắt buộc.
+- Nếu có cả ODO đầu và ODO cuối thì ODO cuối phải lớn hơn hoặc bằng ODO đầu.
 
 ------
 
@@ -632,6 +680,32 @@ Document type:
 ------
 
 # 11. Payroll
+
+## teaching_hour_summaries
+
+Tổng hợp giờ dạy giáo viên theo tháng.
+
+| Column                | Type          | Note                                 |
+| --------------------- | ------------- | ------------------------------------ |
+| id                    | UUID          | PK                                   |
+| teacher_id            | UUID          | FK teachers.id                       |
+| month                 | INT           |                                      |
+| year                  | INT           |                                      |
+| weekday_hours         | NUMERIC(10,2) | DEFAULT 0                            |
+| weekend_hours         | NUMERIC(10,2) | DEFAULT 0                            |
+| night_hours           | NUMERIC(10,2) | DEFAULT 0                            |
+| sensor_practice_hours | NUMERIC(10,2) | DEFAULT 0                            |
+| sensor_exam_hours     | NUMERIC(10,2) | DEFAULT 0                            |
+| status                | VARCHAR(30)   | DRAFT, SUBMITTED, APPROVED, REJECTED |
+| submitted_at          | TIMESTAMP     | NULL                                 |
+| approved_by           | UUID          | FK users.id, NULL                    |
+| approved_at           | TIMESTAMP     | NULL                                 |
+| rejected_reason       | TEXT          | NULL                                 |
+
+Ghi chú:
+
+- MVP chỉ tổng hợp giờ.
+- Chưa tính tiền lương tự động.
 
 ## salary_rules
 

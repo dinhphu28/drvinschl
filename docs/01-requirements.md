@@ -69,6 +69,15 @@ Các chức năng sau chưa nằm trong phạm vi mặc định:
 * Tích hợp hệ thống DAT bên ngoài
 * Tích hợp hệ thống quản lý nhà nước
 * ERP kế toán đầy đủ
+* Quên mật khẩu tự động
+* Đăng nhập Google/Facebook
+* Tích hợp thiết bị DAT
+* Tích hợp SMS Provider
+* Tích hợp Zalo
+* Tích hợp Email notification
+* Xuất Excel báo cáo
+* Xuất PDF báo cáo
+* Tính lương tự động thành tiền
 
 ---
 
@@ -260,14 +269,21 @@ Khách hàng
 
 ```text
 Học viên xem lịch trống
-→ Học viên đặt lịch
-→ Giáo vụ tiếp nhận
-→ Giáo vụ phân công giáo viên
-→ Giáo vụ phân công xe hoặc cabin
+→ Học viên chọn lịch
+→ Hệ thống kiểm tra xung đột lịch
+→ Nếu không xung đột: lịch được tạo ngay
+→ Giáo vụ có thể phân công giáo viên/xe thủ công nếu cần
 → Học viên đi học
-→ Giáo viên ghi nhận buổi học
+→ Giáo viên ghi nhận hoàn thành buổi học
+→ Học viên xác nhận buổi học
 → Học viên đánh giá giáo viên
 → Hệ thống cập nhật tiến độ học
+
+Ghi chú:
+
+Lịch học không cần giáo vụ xác nhận.
+Hệ thống không tự động phân giáo viên.
+Hệ thống không tự động phân xe.
 ```
 
 ---
@@ -523,9 +539,11 @@ Lịch đã được đặt
 
 ---
 
-## FR-SCH-006 Giáo Vụ Xử Lý Lịch
+## FR-SCH-006 Giáo Vụ Điều Phối Lịch
 
-Giáo vụ tiếp nhận và xử lý lịch học viên đã đặt.
+Giáo vụ có thể xem, điều phối, phân công giáo viên, phân công xe hoặc điều chỉnh lịch học khi cần.
+
+Lịch học viên đặt không cần giáo vụ xác nhận trước khi có hiệu lực.
 
 ---
 
@@ -589,10 +607,9 @@ Sau buổi học DAT, hệ thống ghi nhận:
 
 ## FR-TRAIN-004 Upload Hình DAT
 
-Giáo viên upload hình màn hình máy DAT:
+Giáo viên có thể upload hình DAT nếu có.
 
-* Khi bắt đầu buổi học
-* Khi kết thúc buổi học
+Ảnh DAT không bắt buộc trong phiên bản đầu tiên.
 
 ---
 
@@ -743,15 +760,19 @@ Giáo viên báo cáo tình trạng xe trước khi dạy.
 
 ---
 
-## FR-TEA-004 Khai Báo ODO Đi
+## FR-TEA-004 Khai Báo ODO
 
-Giáo viên nhập ODO đi trước khi sử dụng xe.
+Đi Giáo viên có thể nhập ODO đi nếu có.
+
+ODO đi không bắt buộc trong phiên bản đầu tiên.
 
 ---
 
 ## FR-TEA-005 Khai Báo ODO Về
 
-Giáo viên nhập ODO về sau khi kết thúc lịch dạy.
+Giáo viên có thể nhập ODO về nếu có.
+
+ODO về không bắt buộc trong phiên bản đầu tiên.
 
 ---
 
@@ -932,9 +953,17 @@ Hệ thống tính giờ dạy theo nhóm:
 
 ---
 
-## FR-PAY-002 Tính Lương Giáo Viên
+## FR-PAY-002 Tổng Hợp Giờ Dạy Giáo Viên
 
-Hệ thống tính lương giáo viên dựa trên giờ dạy và công thức lương được cấu hình.
+Phiên bản đầu tiên chỉ tổng hợp giờ dạy của giáo viên theo nhóm:
+
+- T2-T6
+- T7-CN
+- Đêm
+- Cảm ứng tập
+- Cảm ứng thi
+
+Hệ thống chưa tính lương tự động thành tiền trong phiên bản đầu tiên.
 
 ---
 
@@ -1029,6 +1058,18 @@ Quản trị hệ thống cập nhật hướng dẫn thi sát hạch theo quy �
 ---
 
 # 4.15 Báo Cáo Và Dashboard
+
+Ghi chú MVP:
+
+Phiên bản đầu tiên chỉ bắt buộc các báo cáo sau:
+
+- Học viên đã hoàn thành khóa học
+- Kết quả thi sát hạch của tất cả học viên
+- Thông tin xe
+- Thông tin nhân viên
+- Lương hoặc bảng tổng hợp giờ dạy
+
+Phiên bản đầu tiên không yêu cầu xuất Excel/PDF báo cáo.
 
 ## FR-RPT-001 Báo Cáo Học Viên
 

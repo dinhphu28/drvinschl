@@ -192,41 +192,70 @@ Ví dụ:
 
 # 5. Scheduling Domain
 
-## Booking
+## Schedule
 
-Yêu cầu đặt lịch của học viên.
+Đại diện lịch học chính thức của học viên.
+
+Lịch được tạo ngay sau khi học viên đặt thành công và không cần giáo vụ xác nhận, tuy nhiên giáo vụ cần sắp xếp giáo viên và xe cho lịch học này.
+Lịch có thể được giáo vụ điều chỉnh, phân công giáo viên, phân công xe hoặc hủy nếu cần thiết.
 
 ### Thuộc tính
 
 - id
 - student_id
-- booking_type
+- enrollment_id
+- teacher_id
+- vehicle_id
+- cabin_id
+- schedule_type
 - schedule_date
 - start_time
 - end_time
 - status
+- created_by
+- created_at
 
-### booking_type
+### schedule_type
 
 - BASIC
 - CABIN
 - DAT
 - YARD
-- SENSOR
+- SENSOR_YARD
+
+### status
+
+- BOOKED
+- CANCELLED
+- IN_PROGRESS
+- TEACHER_COMPLETED
+- STUDENT_CONFIRMED
+- COMPLETED
+
+### Quan hệ
+
+- belongs to Student
+- belongs to Enrollment
+- optionally belongs to Teacher
+- optionally belongs to Vehicle
+- optionally belongs to Cabin
+- has zero or one TrainingSession
 
 ------
 
-## Schedule
+## ScheduleChangeLog
 
-Lịch đã được giáo vụ xác nhận.
+Lưu lịch sử thay đổi lịch.
 
 ### Thuộc tính
 
 - id
-- booking_id
-- teacher_id
-- vehicle_id
-- status
+- schedule_id
+- changed_by
+- old_value
+- new_value
+- reason
+- changed_at
 
 ------
 
@@ -273,11 +302,18 @@ Buổi học thực tế.
 ### Thuộc tính
 
 - training_session_id
-- start_km
-- end_km
+- km
 - duration_minutes
-- start_image
-- end_image
+- note
+- start_image_url
+- end_image_url
+
+### Ghi chú
+
+- Dữ liệu DAT được nhập tay.
+- start_image_url là optional.
+- end_image_url là optional.
+- Không tích hợp thiết bị DAT trong phiên bản đầu tiên.
 
 ------
 
@@ -453,10 +489,21 @@ Buổi học thực tế.
 - id
 - vehicle_id
 - teacher_id
-- odo_start
-- odo_end
+- usage_date
 - started_at
 - ended_at
+- odo_start
+- odo_end
+- start_image_url
+- end_image_url
+- clean_status
+
+### Ghi chú
+
+- start_image_url bắt buộc khi bắt đầu sử dụng xe.
+- odo_start optional.
+- odo_end optional.
+- Nếu nhập cả odo_start và odo_end thì odo_end phải lớn hơn hoặc bằng odo_start.
 
 ------
 
@@ -504,7 +551,9 @@ Ví dụ:
 
 ------
 
-## SalaryCalculation
+## TeachingHourSummary
+
+Tổng hợp giờ dạy của giáo viên trong tháng.
 
 ### Thuộc tính
 
@@ -512,7 +561,23 @@ Ví dụ:
 - teacher_id
 - month
 - year
-- total_amount
+- weekday_hours
+- weekend_hours
+- night_hours
+- sensor_practice_hours
+- sensor_exam_hours
+- status
+
+### status
+
+- DRAFT
+- SUBMITTED
+- APPROVED
+- REJECTED
+
+### Ghi chú
+
+Phiên bản đầu tiên chỉ tổng hợp giờ dạy, chưa tính tiền lương tự động.
 
 ------
 

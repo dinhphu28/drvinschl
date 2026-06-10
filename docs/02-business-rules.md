@@ -4,30 +4,75 @@
 
 ### BR-STU-001
 
-Mỗi học viên chỉ thuộc một khóa học tại một thời điểm.
+Một học viên có thể tham gia nhiều khóa học khác nhau.
+
+Quy tắc:
+
+- Một học viên có thể có nhiều đăng ký khóa học.
+- Mỗi đăng ký khóa học được quản lý độc lập.
+- Mỗi đăng ký khóa học gắn với một gói học cụ thể.
 
 ### BR-STU-002
 
-Mỗi học viên có một tài khoản duy nhất.
+Mỗi học viên có một tài khoản đăng nhập duy nhất.
 
 ### BR-STU-003
 
-Tên đăng nhập được sinh tự động theo quy tắc:
+Tài khoản học viên được tạo thủ công bởi:
+
+- Admin
+- Kế toán
+
+Hệ thống không tự động tạo tài khoản khi tạo học viên.
+
+### BR-STU-004
+
+Tên đăng nhập mặc định của học viên được tạo theo quy tắc:
 
 - Họ tên viết liền
 - Không dấu
 
-### BR-STU-004
+Ví dụ:
 
-Mật khẩu mặc định là số điện thoại học viên.
+Nguyễn Văn A
+→ nguyenvana
+
+Nếu tên đăng nhập bị trùng, hệ thống phải yêu cầu người tạo tài khoản điều chỉnh.
 
 ### BR-STU-005
 
-Học viên phải hoàn thiện hồ sơ trước khi được xét thi tốt nghiệp.
+Mật khẩu mặc định của học viên là số điện thoại học viên.
 
 ### BR-STU-006
 
-Học viên phải hoàn thành học phí trước khi được xét thi sát hạch.
+Học viên được phép đổi mật khẩu sau khi đăng nhập.
+
+### BR-STU-007
+
+Phiên bản đầu tiên chưa hỗ trợ chức năng quên mật khẩu.
+
+Nếu học viên quên mật khẩu, học viên cần liên hệ Admin để reset mật khẩu.
+
+### BR-STU-008
+
+Khi học viên hủy một khóa học, đăng ký khóa học chuyển sang trạng thái:
+
+```
+CANCELLED
+```
+
+### BR-STU-009
+
+Các thay đổi thông tin học viên phải được audit log.
+
+Các thông tin cần audit:
+
+- Họ tên
+- Số điện thoại
+- Ngày sinh
+- Địa chỉ
+- Trạng thái học viên
+- Khóa học
 
 ------
 
@@ -35,15 +80,31 @@ Học viên phải hoàn thành học phí trước khi được xét thi sát h
 
 ### BR-DOC-001
 
-Hồ sơ học viên bao gồm:
+Hồ sơ học viên được quản lý linh hoạt theo từng loại hồ sơ. Mỗi hồ sơ có thể bao gồm:
 
-- Đơn đăng ký học lái xe
-- Ảnh học viên
-- Giấy khám sức khỏe
+- Tên hồ sơ
+- File đính kèm
+- Ghi chú
 
 ### BR-DOC-002
 
-Hồ sơ chỉ được đánh dấu hoàn thành khi đầy đủ toàn bộ giấy tờ bắt buộc.
+Hệ thống cho phép hồ sơ chỉ có ghi chú mà không bắt buộc có file đính kèm.
+
+### BR-DOC-003
+
+Hệ thống cho phép hồ sơ chỉ có file đính kèm mà không bắt buộc có ghi chú.
+
+### BR-DOC-004
+
+Việc hoàn thiện hồ sơ do nhân viên kinh doanh xác nhận thủ công.
+
+### BR-DOC-005
+
+Hệ thống không tự động đánh giá hồ sơ hoàn thiện dựa trên số lượng file đính kèm.
+
+### BR-DOC-006
+
+Nhân viên kinh doanh có thể đánh dấu hồ sơ là hoàn thiện ngay cả khi một số loại hồ sơ chỉ có ghi chú.
 
 ------
 
@@ -55,19 +116,58 @@ Học phí được chia thành nhiều đợt thanh toán.
 
 ### BR-FEE-002
 
-Hệ thống phải lưu lịch sử thanh toán.
+Số đợt thanh toán được cấu hình linh hoạt bởi Admin.
+
+Admin có thể cấu hình:
+
+- Số đợt thanh toán
+- Tên đợt thanh toán
+- Số tiền hoặc tỷ lệ từng đợt
+- Ghi chú cho từng đợt
 
 ### BR-FEE-003
 
-Không được xóa giao dịch đã thanh toán.
+Hệ thống phải lưu lịch sử thanh toán.
 
 ### BR-FEE-004
 
-Chỉ kế toán được phép hoàn phí.
+Không được xóa vật lý giao dịch đã thanh toán.
 
 ### BR-FEE-005
 
+Chỉ kế toán được phép ghi nhận hoàn phí.
+
+### BR-FEE-006
+
 Mọi giao dịch hoàn phí phải lưu lý do.
+
+### BR-FEE-007
+
+Không cho phép học viên thanh toán vượt quá công nợ.
+
+Quy tắc:
+
+Tổng đã thanh toán <= Tổng học phí phải thu
+
+Nếu số tiền thanh toán vượt quá công nợ, hệ thống phải từ chối giao dịch.
+
+### BR-FEE-008
+
+Cho phép hoàn phí một phần.
+
+Quy tắc:
+
+```
+Số tiền hoàn <= Số tiền đã thanh toán
+```
+
+### BR-FEE-009
+
+Hệ thống cần hỗ trợ in phiếu thu.
+
+### BR-FEE-010
+
+Hệ thống cần hỗ trợ xuất PDF phiếu thu.
 
 ------
 
@@ -79,27 +179,83 @@ Học viên chỉ được đặt lịch còn trống.
 
 ### BR-SCH-002
 
-Một giáo viên không được dạy hai lịch cùng thời điểm.
+Học viên có thể đặt lịch miễn là thời điểm đặt trước giờ bắt đầu lịch học.
+
+Quy tắc:
+
+Booking Time < Schedule Start Time
 
 ### BR-SCH-003
 
-Một xe không được sử dụng cho hai lịch cùng thời điểm.
+Học viên được phép hủy lịch nếu thời điểm hủy trước giờ bắt đầu lịch học.
+
+Quy tắc:
+
+```
+Cancel Time < Schedule Start Time
+```
 
 ### BR-SCH-004
 
-Một học viên không được học hai lớp cùng thời điểm.
+Không giới hạn số lượng lịch học viên được đặt.
+
+Điều kiện:
+
+- Không trùng lịch học viên
+- Không xung đột lịch giáo viên nếu đã phân giáo viên
+- Không xung đột lịch xe nếu đã phân xe
 
 ### BR-SCH-005
 
-Lịch học sau khi xác nhận phải lưu lịch sử thay đổi.
+Học viên đặt lịch không cần giáo vụ xác nhận.
+
+Nếu lịch không vi phạm xung đột, lịch được tạo ngay.
 
 ### BR-SCH-006
+
+Giáo vụ không tự động phân giáo viên.
+
+Giáo vụ có thể phân công giáo viên thủ công nếu cần.
+
+### BR-SCH-007
+
+Giáo vụ không tự động phân xe.
+
+Giáo vụ có thể phân công xe thủ công nếu cần.
+
+### BR-SCH-008
+
+Một giáo viên không được dạy hai lịch cùng thời điểm.
+
+### BR-SCH-009
+
+Một xe không được sử dụng cho hai lịch cùng thời điểm.
+
+### BR-SCH-010
+
+Một học viên không được học hai lịch cùng thời điểm.
+
+### BR-SCH-011
 
 Mọi thay đổi lịch phải ghi nhận:
 
 - Người thay đổi
 - Thời gian thay đổi
 - Nội dung thay đổi
+- Lý do thay đổi nếu có
+
+### BR-SCH-012
+
+Trạng thái lịch học gồm:
+
+```
+BOOKED
+CANCELLED
+IN_PROGRESS
+TEACHER_COMPLETED
+STUDENT_CONFIRMED
+COMPLETED
+```
 
 ------
 
@@ -144,22 +300,27 @@ Mỗi buổi DAT phải lưu:
 
 - KM
 - Thời gian
+- Ghi chú nếu có
 
 ### BR-DAT-002
 
-KM tổng được cộng dồn từ các buổi DAT.
+Dữ liệu DAT được giáo viên nhập tay.
 
 ### BR-DAT-003
 
-Thời gian tổng được cộng dồn từ các buổi DAT.
+Hệ thống không tích hợp thiết bị DAT trong phiên bản đầu tiên.
 
 ### BR-DAT-004
 
-Giáo viên phải chụp màn hình DAT lúc bắt đầu.
+Ảnh DAT đầu buổi và cuối buổi không bắt buộc.
 
 ### BR-DAT-005
 
-Giáo viên phải chụp màn hình DAT lúc kết thúc.
+KM tổng được cộng dồn từ các buổi DAT đã hoàn thành.
+
+### BR-DAT-006
+
+Thời gian tổng được cộng dồn từ các buổi DAT đã hoàn thành.
 
 ------
 
@@ -167,15 +328,27 @@ Giáo viên phải chụp màn hình DAT lúc kết thúc.
 
 ### BR-GRAD-001
 
-Chỉ học viên đủ điều kiện mới được đưa vào danh sách thi.
+Điều kiện đủ thi tốt nghiệp do giáo vụ thi xác nhận thủ công.
 
 ### BR-GRAD-002
 
-Kết quả thi không được xóa.
+Hệ thống không tự động kiểm tra điều kiện thi tốt nghiệp trong phiên bản đầu tiên.
 
 ### BR-GRAD-003
 
-Kết quả thi chỉ được cập nhật bởi giáo vụ thi.
+Học viên được phép thi tốt nghiệp nhiều lần.
+
+### BR-GRAD-004
+
+Thi lại tốt nghiệp có tính phí.
+
+### BR-GRAD-005
+
+Kết quả thi không được xóa vật lý.
+
+### BR-GRAD-006
+
+Kết quả thi chỉ được cập nhật bởi giáo vụ thi hoặc Admin.
 
 ------
 
@@ -208,23 +381,47 @@ Lịch sử thi lại phải được lưu vĩnh viễn.
 
 ### BR-INS-001
 
-Giáo viên phải điểm danh trước buổi học.
+Giáo viên được xem lịch dạy hiện tại và lịch dạy tương lai.
 
 ### BR-INS-002
 
-Giáo viên phải khai báo ODO trước khi xuất bãi.
+Giáo viên được phép yêu cầu đổi lịch dạy.
 
 ### BR-INS-003
 
-Giáo viên phải khai báo ODO khi kết thúc ngày làm việc.
+Mọi thay đổi lịch dạy phải được ghi nhận lịch sử thay đổi.
 
 ### BR-INS-004
 
-Giáo viên phải gửi hóa đơn xăng sau khi đổ xăng.
+Giáo viên phải điểm danh trước buổi học theo quy định trung tâm.
 
 ### BR-INS-005
 
+Giáo viên phải chụp hình xe trước khi sử dụng xe.
+
+### BR-INS-006
+
+Giáo viên không bắt buộc phải khai báo ODO trước khi xuất bãi.
+
+### BR-INS-007
+
+Giáo viên không bắt buộc phải khai báo ODO khi kết thúc ngày làm việc.
+
+### BR-INS-008
+
+Giáo viên phải gửi hóa đơn xăng sau khi đổ xăng nếu có phát sinh khai báo nhiên liệu.
+
+### BR-INS-009
+
 Giáo viên được gửi yêu cầu nghỉ phép.
+
+### BR-INS-010
+
+Hệ thống cần tính điểm đánh giá trung bình của giáo viên.
+
+Công thức:
+
+Average Rating = Total Rating Score / Number Of Ratings
 
 ------
 
@@ -236,26 +433,51 @@ Mỗi xe có mã định danh duy nhất.
 
 ### BR-CAR-002
 
-Mỗi lần sử dụng xe phải ghi nhận:
-
-- ODO đi
-- ODO về
+Biển số xe không được trùng.
 
 ### BR-CAR-003
 
-ODO về phải lớn hơn hoặc bằng ODO đi.
+Một xe không gán cố định cho một giáo viên.
 
 ### BR-CAR-004
+
+Giáo viên bắt buộc chụp hình xe trước khi sử dụng xe.
+
+### BR-CAR-005
+
+ODO đầu và ODO cuối không bắt buộc.
+
+### BR-CAR-006
+
+Nếu có nhập ODO đầu và ODO cuối, hệ thống phải kiểm tra:
+
+ODO cuối >= ODO đầu
+
+### BR-CAR-007
+
+Hệ thống cần theo dõi nhiên liệu theo định mức.
+
+Dữ liệu cần lưu:
+
+- Xe
+- Giáo viên khai báo
+- Số lít nhiên liệu
+- KM vận hành nếu có
+- Chi phí nếu có
+- Hóa đơn nếu có
+
+### BR-CAR-008
 
 Mỗi lần bảo dưỡng phải lưu:
 
 - Ngày bảo dưỡng
 - Nội dung
 - Chi phí
+- Phụ tùng thay thế nếu có
 
-### BR-CAR-005
+### BR-CAR-009
 
-Không được xóa lịch sử bảo dưỡng.
+Không được xóa vật lý lịch sử bảo dưỡng.
 
 ------
 
@@ -271,7 +493,20 @@ Quản lý khu vực phê duyệt nghỉ phép.
 
 ### BR-LEAVE-003
 
-Hai giáo viên không được nghỉ cùng ngày theo cấu hình hiện hành.
+Số ngày nghỉ tối đa trong tháng được cấu hình bởi Admin.
+
+Giá trị mặc định:
+
+Unlimited
+
+### BR-LEAVE-004
+
+Khi duyệt nghỉ phép, hệ thống phải kiểm tra số lượng giáo viên tối thiểu còn lại.
+
+Nếu số lượng giáo viên còn lại nhỏ hơn ngưỡng cấu hình, hệ thống phải:
+
+- Cảnh báo
+- Hoặc từ chối duyệt nếu cấu hình bắt buộc
 
 ------
 
@@ -279,19 +514,39 @@ Hai giáo viên không được nghỉ cùng ngày theo cấu hình hiện hành
 
 ### BR-PAY-001
 
-Lương được tính theo số giờ dạy.
+Phiên bản đầu tiên chưa tính lương tự động thành tiền.
 
 ### BR-PAY-002
 
-Giờ ngày thường và cuối tuần có hệ số khác nhau.
+Hệ thống chỉ tổng hợp giờ dạy của giáo viên theo nhóm:
+
+- Thứ 2
+- Thứ 6
+- Thứ 7
+- Chủ nhật
+- Ca đêm
+- Cảm ứng tập
+- Cảm ứng thi
 
 ### BR-PAY-003
 
-Giờ đêm có hệ số riêng.
+Không có phụ cấp trong phiên bản đầu tiên.
 
 ### BR-PAY-004
 
-Lương chỉ được khóa sau khi giám đốc phê duyệt.
+Không có thưởng KPI trong phiên bản đầu tiên.
+
+### BR-PAY-005
+
+Không có khấu trừ trong phiên bản đầu tiên.
+
+### BR-PAY-006
+
+Lương hoặc bảng tổng hợp giờ dạy được duyệt bởi Giám đốc.
+
+### BR-PAY-007
+
+Bảng lương chỉ được khóa sau khi Giám đốc phê duyệt.
 
 ------
 
@@ -316,3 +571,77 @@ Mọi thay đổi kết quả thi phải lưu audit log.
 ### BR-SEC-005
 
 Mọi thay đổi phân quyền phải lưu audit log.
+
+---
+
+# 15. THÔNG BÁO
+
+### BR-NOTI-001
+
+Phiên bản đầu tiên chỉ hỗ trợ thông báo trong ứng dụng.
+
+### BR-NOTI-002
+
+Không gửi thông báo qua:
+
+- SMS
+- Email
+- Zalo trong phiên bản đầu tiên.
+
+### BR-NOTI-003
+
+Hệ thống cần hỗ trợ gửi thông báo tự động cho các nghiệp vụ chính:
+
+- Nhắc học phí
+- Lịch học
+- Lịch thi
+- Kết quả thi
+- Nghỉ phép
+- Bảo dưỡng
+
+------
+
+# 16. BÁO CÁO
+
+### BR-RPT-001
+
+Các báo cáo bắt buộc trong phiên bản đầu tiên gồm:
+
+- Học viên đã hoàn thành khóa học
+- Kết quả thi sát hạch của tất cả học viên
+- Thông tin xe
+- Thông tin nhân viên
+- Lương hoặc bảng tổng hợp giờ dạy
+
+### BR-RPT-002
+
+Phiên bản đầu tiên không cần xuất Excel.
+
+### BR-RPT-003
+
+Phiên bản đầu tiên không cần xuất PDF báo cáo.
+
+------
+
+# 17. DỮ LIỆU VÀ AUDIT
+
+### BR-DATA-001
+
+Dữ liệu nghiệp vụ chỉ được soft delete.
+
+### BR-DATA-002
+
+Audit log không được xóa.
+
+### BR-AUDIT-001
+
+Các đối tượng bắt buộc audit:
+
+- Học viên
+- Học phí
+- Hoàn phí
+- Kết quả thi
+- Lương
+- Phân quyền
+- Tài khoản người dùng
+
