@@ -7,7 +7,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refresh = async () => {
     const res = await refreshToken();
-    setAccessToken(res.data.accessToken);
+    setAccessToken(res.data.data.accessToken);
   };
 
   return (

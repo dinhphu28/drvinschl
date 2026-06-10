@@ -1,6 +1,7 @@
 package com.dinhphu28.drvinschl.entity;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -8,9 +9,7 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
@@ -23,18 +22,21 @@ import lombok.Setter;
 public abstract class AbstractAuditableEntity extends AbstractPersistableEntity {
 
     @CreatedDate
-    LocalDateTime createdDate;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @LastModifiedDate
-    LocalDateTime lastModifiedDate;
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
     @CreatedBy
-    @AttributeOverride(name = "username", column = @Column(name = "created_by"))
-    @Embedded
-    private AuditUser createdBy;
+    @Column(name = "created_by", updatable = false)
+    private UUID createdBy;
 
     @LastModifiedBy
-    @AttributeOverride(name = "username", column = @Column(name = "last_modified_by"))
-    @Embedded
-    private AuditUser lastModifiedBy;
+    @Column(name = "updated_by")
+    private UUID updatedBy;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

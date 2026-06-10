@@ -1,83 +1,87 @@
 package com.dinhphu28.drvinschl.controller;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.dinhphu28.drvinschl.entity.User;
+import com.dinhphu28.drvinschl.model.ApiResponse;
 import com.dinhphu28.drvinschl.model.AuthenticationRequest;
 import com.dinhphu28.drvinschl.model.AuthenticationResponse;
 import com.dinhphu28.drvinschl.model.AuthenticationResult;
-import com.dinhphu28.drvinschl.model.GoogleLoginRequest;
-import com.dinhphu28.drvinschl.model.RegisterRequest;
+import com.dinhphu28.drvinschl.model.ChangePasswordRequest;
+import com.dinhphu28.drvinschl.model.CurrentUserResponse;
 import com.dinhphu28.drvinschl.service.AuthenticationService;
+import com.dinhphu28.drvinschl.service.JwtLogoutHandler;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@RequestMapping("/api/v1/auth")
 @RestController
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthenticationController {
+
     private final AuthenticationService authenticationService;
+    private final JwtLogoutHandler jwtLogoutHandler;
+    @org.springframework.beans.factory.annotation.Value("${application.security.jwt.refresh-token.secure:false}")
+    private boolean secureRefreshCookie;
 
-    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void register(@RequestBody RegisterRequest request) {
-        authenticationService.register(request);
-    }
-
-    @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
-
-        AuthenticationResult authResult = authenticationService.authenticate(request);
-
-        return buildAuthenticationResponse(authResult);
-    }
-
-    @PostMapping(value = "/refresh", produces = MediaType.APPLICATION_JSON_VALUE)
-    public AuthenticationResponse refreshToken(
-            @CookieValue(name = "refresh_token", required = false) String refreshToken) {
-        if (refreshToken == null || refreshToken.isEmpty()) {
-            throw new IllegalArgumentException("Refresh token is missing");
-        }
-        return authenticationService.refreshToken(refreshToken);
-    }
-
-    @PostMapping(value = "/google", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AuthenticationResponse> authenticateWithGoogle(@RequestBody GoogleLoginRequest request) {
-
-        AuthenticationResult authResult = authenticationService.authenticateWithGoogle(request);
-
-        return buildAuthenticationResponse(authResult);
-    }
-
-    private static ResponseEntity<AuthenticationResponse> buildAuthenticationResponse(AuthenticationResult authResult) {
-        ResponseCookie cookie = buildCookie(
-                authResult.refreshToken(),
-                authResult.refreshTokenExpiration());
-
-        AuthenticationResponse response = new AuthenticationResponse(
-                authResult.accessToken(),
-                authResult.accessTokenExpiration());
-
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> login(@Valid @RequestBody AuthenticationRequest request) {
+        AuthenticationResult result = authenticationService.authenticate(request);
+        ResponseCookie cookie = buildRefreshCookie(result.refreshToken(), result.refreshTokenExpiration());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(response);
+                .body(ApiResponse.success(new AuthenticationResponse(result.accessToken(), result.accessTokenExpiration())));
     }
 
-    private static ResponseCookie buildCookie(String refreshToken, long refreshExpirationMillis) {
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
+    @PostMapping("/refresh")
+    public ApiResponse<AuthenticationResponse> refresh(
+            @CookieValue(name = "refresh_token", required = false) String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new IllegalArgumentException("Refresh token is missing");
+        }
+        return ApiResponse.success(authenticationService.refreshToken(refreshToken));
+    }
+
+    @PutMapping("/change-password")
+    public ApiResponse<Void> changePassword(@AuthenticationPrincipal User user,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        authenticationService.changePassword(user, request);
+        return ApiResponse.success(null, "Password changed");
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+        jwtLogoutHandler.logout(request, response, authentication);
+        return ApiResponse.success(null, "Logged out");
+    }
+
+    @GetMapping("/me")
+    public ApiResponse<CurrentUserResponse> me(@AuthenticationPrincipal UserDetails userDetails) {
+        return ApiResponse.success(authenticationService.me(userDetails.getUsername()));
+    }
+
+    private ResponseCookie buildRefreshCookie(String refreshToken, long refreshExpirationMillis) {
+        return ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
-                .secure(true)
-                .path("/api/v1/auth/refresh")
+                .secure(secureRefreshCookie)
+                .path("/api/v1/auth")
                 .maxAge(refreshExpirationMillis / 1000)
-                .sameSite("Strict")
+                .sameSite("Lax")
                 .build();
-        return cookie;
     }
 }

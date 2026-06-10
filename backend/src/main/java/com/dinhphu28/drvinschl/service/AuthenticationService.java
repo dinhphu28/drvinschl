@@ -1,25 +1,29 @@
 package com.dinhphu28.drvinschl.service;
 
-import java.util.HashMap;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.dinhphu28.drvinschl.entity.Role;
 import com.dinhphu28.drvinschl.entity.Token;
 import com.dinhphu28.drvinschl.entity.TokenType;
 import com.dinhphu28.drvinschl.entity.User;
+import com.dinhphu28.drvinschl.exception.NotFoundException;
+import com.dinhphu28.drvinschl.exception.UnauthorizedException;
 import com.dinhphu28.drvinschl.model.AuthenticationRequest;
 import com.dinhphu28.drvinschl.model.AuthenticationResponse;
 import com.dinhphu28.drvinschl.model.AuthenticationResult;
-import com.dinhphu28.drvinschl.model.GoogleLoginRequest;
-import com.dinhphu28.drvinschl.model.RegisterRequest;
+import com.dinhphu28.drvinschl.model.ChangePasswordRequest;
+import com.dinhphu28.drvinschl.model.CurrentUserResponse;
 import com.dinhphu28.drvinschl.repository.TokenRepository;
 import com.dinhphu28.drvinschl.repository.UserRepository;
 
@@ -28,63 +32,32 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
+
     @Value("${application.security.jwt.refresh-token.expiration}")
-    private long REFRESH_EXPIRATION;
+    private long refreshExpirationMillis;
 
     @Value("${application.security.jwt.expiration}")
-    private long ACCESS_TOKEN_EXPIRATION;
+    private long accessTokenExpirationMillis;
 
-    private final PasswordEncoder passwordEncoder;
-    private final UserRepository userRepository;
-    private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
 
-    private final GoogleAuthService googleAuthService;
+    @Transactional
+    public AuthenticationResult authenticate(AuthenticationRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+        } catch (BadCredentialsException exception) {
+            throw new UnauthorizedException("INVALID_CREDENTIALS", "Invalid username or password");
+        }
 
-    public void register(@NonNull RegisterRequest request) {
-        var user = User.builder()
-                .firstName(request.firstName())
-                .lastName(request.lastName())
-                .email(request.email())
-                .username(request.username())
-                .password(passwordEncoder.encode(request.password()))
-                .isEnabled(true) // NOTE: Should be false if email verification is implemented
-                .role(Role.USER)
-                .build();
+        User user = userRepository.findByUsername(request.username())
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
 
-        userRepository.save(user);
-    }
-
-    public @NonNull AuthenticationResult authenticate(@NonNull AuthenticationRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.username(),
-                        request.password()));
-
-        var user = userRepository.findByUsername(request.username())
-                .orElseThrow(() -> new AuthenticationException("User not found") {
-                });
-
-        Map<String, Object> extraClaims = user.getEmail() != null
-                ? Map.of("email", user.getEmail())
-                : new HashMap<>();
-        String accessToken = jwtService.generateToken(extraClaims, user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-        saveRefreshToken(user, refreshToken);
-
-        return new AuthenticationResult(
-                accessToken,
-                ACCESS_TOKEN_EXPIRATION,
-                refreshToken,
-                REFRESH_EXPIRATION);
-    }
-
-    public @NonNull AuthenticationResult authenticateWithGoogle(GoogleLoginRequest request) {
-        var payload = googleAuthService.verify(request.idToken());
-
-        User user = userService.processGoogleUser(payload);
+        revokeAllRefreshTokens(user);
 
         String accessToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
@@ -92,38 +65,86 @@ public class AuthenticationService {
 
         return new AuthenticationResult(
                 accessToken,
-                ACCESS_TOKEN_EXPIRATION,
+                accessTokenExpirationMillis,
                 refreshToken,
-                REFRESH_EXPIRATION);
+                refreshExpirationMillis);
     }
 
-    public @NonNull AuthenticationResponse refreshToken(@NonNull String refreshToken) {
+    @Transactional(readOnly = true)
+    public AuthenticationResponse refreshToken(String refreshToken) {
         Token storedToken = tokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new AuthenticationException("Refresh token not found") {
-                });
+                .orElseThrow(() -> new UnauthorizedException("INVALID_REFRESH_TOKEN", "Refresh token is invalid"));
+
         if (storedToken.isExpired() || storedToken.isRevoked() || jwtService.isTokenExpired(refreshToken)) {
-            throw new AuthenticationException("Refresh token is invalid") {
-            };
+            throw new UnauthorizedException("INVALID_REFRESH_TOKEN", "Refresh token is invalid");
         }
 
-        User user = storedToken.getUser();
-        Map<String, Object> extraClaims = user.getEmail() != null
-                ? Map.of("email", user.getEmail())
-                : new HashMap<>();
-        String newAccessToken = jwtService.generateToken(extraClaims, user);
-        return new AuthenticationResponse(
-                newAccessToken,
-                ACCESS_TOKEN_EXPIRATION);
+        String newAccessToken = jwtService.generateToken(storedToken.getUser());
+        return new AuthenticationResponse(newAccessToken, accessTokenExpirationMillis);
+    }
+
+    @Transactional(readOnly = true)
+    public CurrentUserResponse me(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+        return toCurrentUserResponse(user);
+    }
+
+    @Transactional
+    public void changePassword(User user, ChangePasswordRequest request) {
+        User currentUser = userRepository.findByUsername(user.getUsername())
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+
+        if (!passwordEncoder.matches(request.oldPassword(), currentUser.getPassword())) {
+            throw new UnauthorizedException("INVALID_PASSWORD", "Old password is incorrect");
+        }
+
+        currentUser.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(currentUser);
+        revokeAllRefreshTokens(currentUser);
     }
 
     private void saveRefreshToken(User user, String refreshToken) {
-        var token = Token.builder()
-                .user(user)
+        Token token = Token.builder()
                 .token(refreshToken)
                 .tokenType(TokenType.REFRESH)
-                .expired(false)
                 .revoked(false)
+                .expired(false)
+                .expiresAt(LocalDateTime.now().plusNanos(refreshExpirationMillis * 1_000_000L))
+                .user(user)
                 .build();
         tokenRepository.save(token);
+    }
+
+    private void revokeAllRefreshTokens(User user) {
+        List<Token> activeTokens = tokenRepository.findAllByUserAndExpiredFalseAndRevokedFalse(user);
+        if (activeTokens.isEmpty()) {
+            return;
+        }
+
+        activeTokens.forEach(token -> {
+            token.setExpired(true);
+            token.setRevoked(true);
+        });
+        tokenRepository.saveAll(activeTokens);
+    }
+
+    private CurrentUserResponse toCurrentUserResponse(User user) {
+        Set<String> roles = user.getRoles().stream()
+                .map(role -> role.getCode())
+                .collect(Collectors.toSet());
+        Set<String> permissions = user.getRoles().stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .map(permission -> permission.getCode())
+                .collect(Collectors.toSet());
+        return new CurrentUserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getFullName(),
+                user.getPhone(),
+                user.getEmail(),
+                user.getStatus(),
+                roles.stream().sorted().toList(),
+                permissions.stream().sorted().toList());
     }
 }

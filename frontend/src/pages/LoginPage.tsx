@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Button,
   Card,
@@ -13,52 +13,25 @@ import {
   Col,
   Alert,
 } from "reactstrap";
-import { login, loginWithGoogle } from "../api/auth";
+import { login } from "../api/auth";
 import { useAuth } from "../context/useAuth";
 
 const LoginPage: React.FC = () => {
   const { setAccessToken } = useAuth();
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await login({ email, password });
-      setAccessToken(res.data.accessToken);
+      const res = await login({ username, password });
+      setAccessToken(res.data.data.accessToken);
     } catch {
       setError("Invalid credentials");
     }
   };
-
-  const handleGoogleCallback = async (res: GoogleCredentialResponse) => {
-    try {
-      const result = await loginWithGoogle(res.credential);
-      setAccessToken(result.data.accessToken);
-    } catch {
-      setError("Google login failed");
-    }
-  };
-
-  useEffect(() => {
-    if (!window.google?.accounts?.id) return;
-
-    window.google.accounts.id.initialize({
-      client_id: "64761084078-g1h55m22v2jciua78f7t2omcs5qtmhqh.apps.googleusercontent.com",
-      callback: handleGoogleCallback,
-    });
-
-    const el = document.getElementById("googleBtn");
-    if (!el) return;
-
-    window.google.accounts.id.renderButton(el, {
-      theme: "outline",
-      size: "large",
-      width: "100%",
-    });
-  }, []);
 
   return (
     <Container className="vh-100 d-flex align-items-center">
@@ -67,30 +40,30 @@ const LoginPage: React.FC = () => {
           <Card>
             <CardBody>
               <CardTitle tag="h4" className="text-center mb-4">
-                Login
+                Sign in
               </CardTitle>
 
               {error && <Alert color="danger">{error}</Alert>}
 
               <Form onSubmit={handleLogin}>
                 <FormGroup>
-                  <Label>Email</Label>
-                  <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Label>Username</Label>
+                  <Input value={username} onChange={(e) => setUsername(e.target.value)} />
                 </FormGroup>
 
                 <FormGroup>
                   <Label>Password</Label>
-                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                 </FormGroup>
 
                 <Button color="primary" block>
                   Login
                 </Button>
               </Form>
-
-              <hr />
-
-              <div id="googleBtn" />
             </CardBody>
           </Card>
         </Col>

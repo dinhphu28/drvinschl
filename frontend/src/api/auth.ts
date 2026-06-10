@@ -1,15 +1,23 @@
 import api from "./axios";
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message: string | null;
+}
+
+export interface AuthenticationResponse {
+  accessToken: string;
+  accessTokenExpiration: number;
 }
 
 export const login = (data: LoginRequest) =>
   api.post("/auth/login", data);
-
-export const loginWithGoogle = (idToken: string) =>
-  api.post("/auth/google", { idToken });
 
 export const refreshToken = () =>
   api.post("/auth/refresh");

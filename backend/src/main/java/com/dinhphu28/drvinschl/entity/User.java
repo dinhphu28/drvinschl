@@ -1,20 +1,24 @@
 package com.dinhphu28.drvinschl.entity;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,43 +31,49 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "_user")
-public class User implements UserDetails {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Integer id;
+@Table(name = "users", uniqueConstraints = @UniqueConstraint(columnNames = "username"))
+public class User extends AbstractAuditableEntity implements UserDetails {
 
-    @Column(name = "username", nullable = false, unique = true)
+    @Column(name = "username", nullable = false, unique = true, length = 100)
     private String username;
 
-    // WARN: Email still be not validated
-    @Column(name = "email", nullable = true, unique = true)
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
+
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    @Column(name = "email", length = 255, unique = true)
     private String email;
 
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
+    @Column(name = "status", nullable = false, length = 30)
+    private String status;
 
-    @Column(name = "last_name")
-    private String lastName;
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<Role> roles = new HashSet<>();
 
-    // WARN: Consider security with password login when allow null
-    @Column(name = "password", nullable = true)
-    private String password;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    private Role role;
-
-    @OneToMany(mappedBy = "user")
-    private List<Token> tokens;
-
-    @Column(name = "is_enabled")
-    private boolean isEnabled;
+    @Builder.Default
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<Token> tokens = new ArrayList<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return role.getAuthorities();
+        return roles.stream()
+                .flatMap(role -> role.getAuthorities().stream())
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public String getPassword() {
+        return passwordHash;
     }
 
     @Override
@@ -73,7 +83,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return "ACTIVE".equalsIgnoreCase(status);
     }
 
     @Override
@@ -83,6 +93,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isEnabled;
+        return "ACTIVE".equalsIgnoreCase(status);
     }
 }

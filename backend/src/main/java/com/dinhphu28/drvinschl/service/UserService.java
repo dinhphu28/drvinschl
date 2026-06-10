@@ -1,146 +1,135 @@
 package com.dinhphu28.drvinschl.service;
 
-import java.text.Normalizer;
 import java.util.List;
-import java.util.Optional;
-import java.util.regex.Pattern;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.dinhphu28.drvinschl.entity.Role;
+import com.dinhphu28.drvinschl.entity.Token;
 import com.dinhphu28.drvinschl.entity.User;
-import com.dinhphu28.drvinschl.entity.UserProvider;
+import com.dinhphu28.drvinschl.exception.ConflictException;
+import com.dinhphu28.drvinschl.exception.NotFoundException;
+import com.dinhphu28.drvinschl.model.ResetPasswordRequest;
+import com.dinhphu28.drvinschl.model.UserCreateRequest;
+import com.dinhphu28.drvinschl.model.UserResponse;
+import com.dinhphu28.drvinschl.model.UserStatusUpdateRequest;
 import com.dinhphu28.drvinschl.model.UserUpdateRequest;
-import com.dinhphu28.drvinschl.repository.UserProviderRepository;
+import com.dinhphu28.drvinschl.repository.RoleRepository;
+import com.dinhphu28.drvinschl.repository.TokenRepository;
 import com.dinhphu28.drvinschl.repository.UserRepository;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
     private final UserRepository userRepository;
-    private final UserProviderRepository userProviderRepository;
+    private final RoleRepository roleRepository;
+    private final TokenRepository tokenRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @NullMarked
-    public User updateUser(UserUpdateRequest updateRequest, String username) {
-        User user = userRepository
-                .findByUsername(username)
-                .orElseThrow();
-        user.setEmail(updateRequest.email());
-        return userRepository.save(user);
+    @Transactional(readOnly = true)
+    public List<UserResponse> listUsers() {
+        return userRepository.findAllByDeletedAtIsNull().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    @NullMarked
-    public boolean isUsernameExisted(String username) {
-        Optional<User> user = userRepository.findByUsername(username);
-        return user.isPresent();
+    @Transactional(readOnly = true)
+    public UserResponse getUser(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+        return toResponse(user);
     }
 
-    public User processGoogleUser(GoogleIdToken.Payload payload) {
-
-        String email = payload.getEmail();
-        String googleId = payload.getSubject();
-
-        return userRepository.findByEmail(email)
-                .map(user -> {
-                    userProviderRepository.findByUser(user).orElseGet(() -> {
-                        UserProvider userProvider = UserProvider.builder()
-                                .providerName("GOOGLE")
-                                .providerId(googleId)
-                                .user(user)
-                                .build();
-                        return userProviderRepository.save(userProvider);
-                    });
-
-                    return user;
-                })
-                .orElseGet(() -> {
-                    String firstName = (String) payload.get("given_name");
-                    String lastName = (String) payload.get("family_name");
-                    User user = User.builder()
-                            .firstName(firstName)
-                            .lastName(lastName)
-                            .email(email)
-                            .username(generateUniqueUsername(firstName, lastName))
-                            .isEnabled(true)
-                            .role(Role.USER)
-                            .build();
-                    User savedUser = userRepository.save(user);
-
-                    UserProvider userProvider = UserProvider.builder()
-                            .providerName("GOOGLE")
-                            .providerId(googleId)
-                            .user(savedUser)
-                            .build();
-                    userProviderRepository.save(userProvider);
-
-                    return user;
-                });
+    @Transactional
+    public UserResponse createUser(UserCreateRequest request) {
+        assertUserNotExists(request.username(), request.email());
+        User user = new User();
+        user.setUsername(request.username());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setFullName(request.fullName());
+        user.setPhone(request.phone());
+        user.setEmail(request.email());
+        user.setStatus(request.status());
+        user.setRoles(loadRoles(request.roleIds()));
+        return toResponse(userRepository.save(user));
     }
 
-    public void activateUser(String email) {
-        var user = userRepository.findByEmail(email).orElseThrow();
-        user.setEnabled(true);
+    @Transactional
+    public UserResponse updateUser(UUID id, UserUpdateRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+        user.setFullName(request.fullName());
+        user.setPhone(request.phone());
+        user.setEmail(request.email());
+        user.setStatus(request.status());
+        if (request.roleIds() != null) {
+            user.setRoles(loadRoles(request.roleIds()));
+        }
+        return toResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public UserResponse updateStatus(UUID id, UserStatusUpdateRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+        user.setStatus(request.status());
+        return toResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public void resetPassword(UUID id, ResetPasswordRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+        revokeAllRefreshTokens(user);
     }
 
-    @NullMarked
-    private String generateUniqueUsername(String firstName, @Nullable String lastName) {
-        if (firstName.isBlank()) {
-            throw new IllegalArgumentException("First name cannot be blank");
+    private void assertUserNotExists(String username, String email) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new ConflictException("USERNAME_EXISTS", "Username already exists");
         }
-
-        String fullName = (lastName != null)
-                ? lastName.trim() + firstName.trim()
-                : firstName.trim();
-
-        String base = removeVietnameseAccents(fullName)
-                .toLowerCase()
-                .replaceAll("[^a-z0-9]", "");
-        if (base.isBlank()) {
-            base = "wolf";
+        if (email != null && userRepository.findByEmail(email).isPresent()) {
+            throw new ConflictException("EMAIL_EXISTS", "Email already exists");
         }
-
-        List<String> takenUsernames = userRepository.findAllUsernamesStartingWith(base);
-        if (takenUsernames.isEmpty() || !takenUsernames.contains(base)) {
-            return base;
-        }
-
-        int maxNumber = 0;
-        int baseLength = base.length();
-
-        for (String taken : takenUsernames) {
-            if (taken.equals(base))
-                continue;
-
-            String suffix = taken.substring(baseLength);
-            if (suffix.matches("\\d+")) {
-                try {
-                    int currentNum = Integer.parseInt(suffix);
-                    if (currentNum > maxNumber) {
-                        maxNumber = currentNum;
-                    }
-                } catch (NumberFormatException ignored) {
-                    // Safe handling for structural overflows
-                }
-            }
-        }
-
-        return base + (maxNumber + 1);
     }
 
-    @NullMarked
-    private static String removeVietnameseAccents(String input) {
-        if (input == null)
-            return "";
-        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
-        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
-        return pattern.matcher(normalized).replaceAll("").replace("đ", "d").replace("Đ", "D");
+    private Set<Role> loadRoles(List<UUID> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            throw new NotFoundException("ROLE_NOT_FOUND", "At least one role is required");
+        }
+        List<Role> roles = roleRepository.findAllById(roleIds);
+        if (roles.size() != roleIds.size()) {
+            throw new NotFoundException("ROLE_NOT_FOUND", "One or more roles not found");
+        }
+        return new HashSet<>(roles);
     }
 
+    private void revokeAllRefreshTokens(User user) {
+        List<Token> activeTokens = tokenRepository.findAllByUserAndExpiredFalseAndRevokedFalse(user);
+        activeTokens.forEach(token -> {
+            token.setExpired(true);
+            token.setRevoked(true);
+        });
+        tokenRepository.saveAll(activeTokens);
+    }
+
+    private UserResponse toResponse(User user) {
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getFullName(),
+                user.getPhone(),
+                user.getEmail(),
+                user.getStatus(),
+                user.getRoles().stream().map(Role::getCode).sorted().toList());
+    }
 }
