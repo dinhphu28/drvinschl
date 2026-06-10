@@ -1,6 +1,13 @@
 # REST API Specification
 
-## Tổng Quan
+# Hệ Thống Quản Lý Trung Tâm Đào Tạo Lái Xe
+
+Version: 1.0  
+Status: Draft
+
+---
+
+# 1. Tổng Quan
 
 Base URL:
 
@@ -24,19 +31,19 @@ Response chuẩn:
 }
 ```
 
-Error:
+Error chuẩn:
 
 ```json
 {
   "success": false,
   "error_code": "VALIDATION_ERROR",
-  "message": "Phone already exists"
+  "message": "Validation failed"
 }
 ```
 
-------
+---
 
-# Authentication
+# 2. Authentication
 
 ## POST /auth/login
 
@@ -47,30 +54,23 @@ Request:
 ```json
 {
   "username": "nguyenvana",
-  "password": "123456"
+  "password": "0909000000"
 }
 ```
 
-Response:
-
-```json
-{
-  "accessToken": "...",
-  "refreshToken": "..."
-}
-```
-
-------
-
-## POST /auth/refresh
-
-Làm mới access token.
-
-------
+---
 
 ## POST /auth/logout
 
 Đăng xuất.
+
+---
+
+## POST /auth/refresh
+
+Làm mới access token nếu hệ thống sử dụng refresh token.
+
+---
 
 ## PUT /auth/change-password
 
@@ -85,6 +85,41 @@ Request:
 }
 ```
 
+---
+
+## POST /auth/forgot-password
+
+Không thuộc MVP.
+
+Trong phiên bản đầu tiên, người dùng liên hệ Admin để reset mật khẩu.
+
+---
+
+# 3. User, Role, Permission
+
+## GET /users
+
+Danh sách người dùng.
+
+---
+
+## POST /users
+
+Tạo tài khoản người dùng.
+
+Ghi chú:
+
+- Admin có thể tạo mọi loại tài khoản.
+- Kế toán có thể tạo tài khoản học viên nếu được phân quyền.
+
+---
+
+## PUT /users/{id}
+
+Cập nhật tài khoản.
+
+---
+
 ## PUT /users/{id}/reset-password
 
 Admin reset mật khẩu cho người dùng.
@@ -97,558 +132,891 @@ Request:
 }
 ```
 
-------
+---
 
-# Student
+## GET /roles
+
+Danh sách vai trò.
+
+---
+
+## POST /roles
+
+Tạo vai trò.
+
+---
+
+## PUT /roles/{id}/permissions
+
+Cập nhật quyền của vai trò.
+
+---
+
+# 4. Student
 
 ## GET /students
 
 Danh sách học viên.
 
-Filter:
+Query:
 
 ```http
-GET /students?page=1&size=20&keyword=phu
+GET /students?page=1&size=20&keyword=phu&status=ACTIVE
 ```
 
-------
+---
 
 ## POST /students
 
 Tạo học viên.
 
-------
+---
 
 ## GET /students/{id}
 
 Chi tiết học viên.
 
-------
+---
 
 ## PUT /students/{id}
 
 Cập nhật học viên.
 
-------
+---
+
+## DELETE /students/{id}
+
+Soft delete học viên.
+
+---
 
 ## GET /students/{id}/progress
 
-Tiến độ học tập.
+Tiến độ học tập của học viên.
 
-Response:
+---
 
-```json
-{
-  "basicHours": 4,
-  "cabinHours": 2,
-  "datKm": 450,
-  "datRequiredKm": 810,
-  "yardHours": 8
-}
-```
+## GET /students/me
 
-------
+Học viên xem thông tin của mình.
 
-# Student Documents
+---
+
+## GET /students/me/progress
+
+Học viên xem tiến độ của mình.
+
+---
+
+# 5. Student Document
 
 ## GET /students/{id}/documents
 
-------
+Danh sách hồ sơ học viên.
+
+---
 
 ## POST /students/{id}/documents
 
-Upload hồ sơ.
+Tạo hồ sơ học viên.
 
-Multipart.
+Multipart hoặc JSON.
 
-------
+Ghi chú:
 
-# Enrollment
+- `file` optional.
+- `note` optional.
+- Ít nhất một trong hai giá trị `file` hoặc `note` phải có.
+
+---
+
+## PUT /students/{id}/documents/{documentId}
+
+Cập nhật hồ sơ.
+
+---
+
+## DELETE /students/{id}/documents/{documentId}
+
+Soft delete hồ sơ.
+
+---
+
+## PUT /students/{id}/documents/completion-status
+
+Kinh doanh đánh dấu hồ sơ hoàn thiện.
+
+Request:
+
+```json
+{
+  "completed": true,
+  "note": "Đã kiểm tra hồ sơ"
+}
+```
+
+---
+
+# 6. Course & Enrollment
+
+## GET /course-packages
+
+Danh sách gói học.
+
+---
+
+## POST /course-packages
+
+Tạo gói học.
+
+---
+
+## PUT /course-packages/{id}
+
+Cập nhật gói học.
+
+---
 
 ## POST /enrollments
 
-Tạo đăng ký khóa học.
+Đăng ký khóa học cho học viên.
 
-------
+Request:
 
-## GET /enrollments/{id}
+```json
+{
+  "studentId": "uuid",
+  "coursePackageId": "uuid",
+  "enrollmentDate": "2026-06-10"
+}
+```
 
-Chi tiết đăng ký.
+---
 
-------
+## GET /students/{id}/enrollments
 
-## PUT /enrollments/{id}/status
+Danh sách khóa học của học viên.
 
-Thay đổi trạng thái.
+---
 
-------
+## PUT /enrollments/{id}/cancel
 
-# Payment
+Hủy đăng ký khóa học.
+
+---
+
+# 7. Payment
 
 ## GET /payments
 
 Tra cứu thanh toán.
 
-------
+---
 
 ## POST /payments
 
-Thu học phí.
+Ghi nhận thanh toán.
 
-------
+Request:
 
-## POST /payments/{id}/refund
+```json
+{
+  "studentId": "uuid",
+  "enrollmentId": "uuid",
+  "amount": 1000000,
+  "paymentType": "TUITION",
+  "paymentMethod": "CASH",
+  "paidAt": "2026-06-10T09:00:00",
+  "note": "Đợt 1"
+}
+```
 
-Hoàn học phí.
+Ghi chú:
 
-------
+- Không cho thanh toán vượt công nợ.
+
+---
 
 ## GET /students/{id}/payments
 
-Lịch sử thanh toán.
+Lịch sử thanh toán của học viên.
 
-------
+---
 
-# Booking
+## POST /payments/{id}/refund
 
-## GET /bookings/available-slots
+Hoàn phí một phần hoặc toàn phần.
 
-Xem lịch trống.
+Request:
 
-Ví dụ:
-
-```http
-GET /bookings/available-slots
-?type=DAT
-&date=2026-06-01
+```json
+{
+  "amount": 500000,
+  "reason": "Học viên hủy khóa"
+}
 ```
 
-------
+---
 
-## POST /bookings
+## GET /payments/{id}/receipt
 
-Đặt lịch học.
+Xem phiếu thu.
 
-------
+---
 
-## GET /bookings/my-bookings
+## POST /payments/{id}/receipt
 
-Học viên xem lịch đã đặt.
+Sinh phiếu thu.
 
-------
+---
 
-## DELETE /bookings/{id}
+## GET /payments/{id}/receipt/pdf
 
-Hủy lịch.
+Tải PDF phiếu thu.
 
-------
+---
 
-# Schedule
+# 8. Payment Plan & Fee Config
+
+## GET /payment-plans
+
+Danh sách cấu hình đợt thanh toán.
+
+---
+
+## POST /payment-plans
+
+Tạo cấu hình đợt thanh toán.
+
+---
+
+## PUT /payment-plans/{id}
+
+Cập nhật cấu hình đợt thanh toán.
+
+---
+
+## GET /fee-configs
+
+Danh sách cấu hình phí.
+
+---
+
+## POST /fee-configs
+
+Tạo cấu hình phí.
+
+---
+
+## PUT /fee-configs/{id}
+
+Cập nhật cấu hình phí.
+
+---
+
+# 9. Schedule
+
+## GET /schedules/available-slots
+
+Học viên xem lịch trống.
+
+Query:
+
+```http
+GET /schedules/available-slots?type=DAT&date=2026-06-01
+```
+
+---
+
+## POST /schedules
+
+Học viên đặt lịch.
+
+Ghi chú:
+
+- Không cần giáo vụ xác nhận.
+- Hệ thống tạo lịch ngay nếu không xung đột.
+
+Request:
+
+```json
+{
+  "enrollmentId": "uuid",
+  "scheduleType": "DAT",
+  "scheduleDate": "2026-06-01",
+  "startTime": "08:00",
+  "endTime": "10:00"
+}
+```
+
+---
 
 ## GET /schedules
 
 Danh sách lịch.
 
-------
+---
 
-## POST /schedules
+## GET /schedules/{id}
 
-Giáo vụ xác nhận lịch.
+Chi tiết lịch.
 
-------
+---
+
+## DELETE /schedules/{id}
+
+Học viên hủy lịch.
+
+Chỉ được hủy trước giờ bắt đầu lịch.
+
+---
+
+## GET /schedules/my-schedules
+
+Học viên xem lịch của mình.
+
+---
 
 ## PUT /schedules/{id}/assign-teacher
 
-Phân giáo viên.
+Giáo vụ phân công giáo viên thủ công.
 
-------
+Request:
+
+```json
+{
+  "teacherId": "uuid"
+}
+```
+
+---
 
 ## PUT /schedules/{id}/assign-vehicle
 
-Phân xe.
+Giáo vụ phân công xe thủ công.
 
-------
+Request:
+
+```json
+{
+  "vehicleId": "uuid"
+}
+```
+
+---
 
 ## PUT /schedules/{id}/reschedule
 
-Đổi lịch.
+Giáo vụ hoặc người có quyền điều chỉnh lịch.
 
-------
+---
 
-# Training Session
+# 10. Training Session
 
 ## POST /training-sessions
 
-Tạo buổi học thực tế.
+Tạo buổi học thực tế từ lịch.
 
-------
+---
 
 ## GET /training-sessions/{id}
 
 Chi tiết buổi học.
 
-------
+---
 
 ## PUT /training-sessions/{id}/start
 
 Bắt đầu buổi học.
 
-------
+---
 
-## PUT /training-sessions/{id}/finish
+## PUT /training-sessions/{id}/teacher-complete
 
-Kết thúc buổi học.
+Giáo viên đánh dấu hoàn thành buổi học.
 
-------
+---
 
-# DAT Session
+## PUT /training-sessions/{id}/student-confirm
 
-## POST /training-sessions/{id}/dat
+Học viên xác nhận buổi học.
 
-Ghi nhận DAT.
+---
+
+## PUT /training-sessions/{id}/complete
+
+Hoàn tất buổi học sau khi đủ trạng thái cần thiết.
+
+---
+
+## PUT /training-sessions/{id}/dat
+
+Ghi nhận dữ liệu DAT nhập tay.
 
 Request:
 
 ```json
 {
-  "startKm": 100,
-  "endKm": 130
+  "km": 20,
+  "durationMinutes": 60,
+  "note": "Học DAT buổi 1"
 }
 ```
 
-------
+Ghi chú:
+
+- Không tích hợp thiết bị DAT.
+- Ảnh DAT không bắt buộc.
+
+---
 
 ## POST /training-sessions/{id}/dat-images
 
-Upload ảnh DAT.
+Upload ảnh DAT nếu có.
 
-------
+Multipart:
 
-# Teacher Rating
+- startImage optional.
+- endImage optional.
+
+---
+
+# 11. Teacher Rating
 
 ## POST /teacher-ratings
 
-Đánh giá giáo viên.
+Học viên đánh giá giáo viên.
 
 Request:
 
 ```json
 {
-  "sessionId": "...",
+  "trainingSessionId": "uuid",
   "rating": 5,
-  "comment": "Rất nhiệt tình"
+  "comment": "Giáo viên hướng dẫn rõ ràng"
 }
 ```
 
-------
+---
 
-# Examination
+## GET /teachers/{id}/ratings/summary
+
+Điểm đánh giá trung bình của giáo viên.
+
+---
+
+# 12. Examination
 
 ## GET /exams
 
 Danh sách kỳ thi.
 
-------
+---
 
 ## POST /exams
 
 Tạo kỳ thi.
 
-------
-
-## POST /exams/{id}/registrations
-
-Đăng ký học viên.
-
-------
+---
 
 ## GET /exams/{id}/registrations
 
-Danh sách dự thi.
+Danh sách học viên tham gia kỳ thi.
 
-------
+---
 
-# Exam Result
+## POST /exams/{id}/registrations
+
+Thêm học viên vào kỳ thi.
+
+Ghi chú:
+
+- Điều kiện đủ thi do Giáo vụ thi xác nhận thủ công.
+
+---
 
 ## POST /exam-results
 
 Nhập kết quả thi.
 
-------
+---
+
+## PUT /exam-results/{id}
+
+Cập nhật kết quả thi.
+
+---
 
 ## GET /students/{id}/exam-results
 
-Tra cứu kết quả.
+Tra cứu kết quả thi của học viên.
 
-------
+---
 
-# Retake
+## GET /students/me/exam-results
+
+Học viên xem kết quả thi của mình.
+
+---
 
 ## POST /retake-registrations
 
 Đăng ký thi lại.
 
-------
+---
 
 ## GET /retake-registrations
 
-Danh sách thi lại.
+Danh sách đăng ký thi lại.
 
-------
+---
 
-# Teacher
+# 13. Teacher & Attendance
 
 ## GET /teachers
 
 Danh sách giáo viên.
 
-------
+---
 
-## GET /teachers/{id}/schedules
+## GET /teachers/{id}
 
-Lịch dạy.
+Chi tiết giáo viên.
 
-------
+---
 
-## GET /teachers/{id}/statistics
+## GET /teachers/me/schedules
 
-Thống kê giờ dạy.
+Giáo viên xem lịch dạy của mình.
 
-------
+---
 
-# Attendance
+## GET /teachers/me/statistics
+
+Thống kê giờ dạy của giáo viên.
+
+---
 
 ## POST /teacher-attendances/check-in
 
-Điểm danh.
+Giáo viên điểm danh.
 
-------
+---
 
 ## POST /teacher-attendances/check-out
 
-Kết thúc ngày làm việc.
+Giáo viên kết thúc ngày làm việc.
 
-------
+---
 
-# Leave Request
-
-## POST /leave-requests
-
-Tạo đơn nghỉ phép.
-
-------
-
-## GET /leave-requests
-
-Danh sách đơn.
-
-------
-
-## PUT /leave-requests/{id}/approve
-
-Duyệt nghỉ phép.
-
-------
-
-## PUT /leave-requests/{id}/reject
-
-Từ chối nghỉ phép.
-
-------
-
-# Vehicle
+# 14. Vehicle
 
 ## GET /vehicles
 
 Danh sách xe.
 
-------
+---
 
 ## POST /vehicles
 
 Tạo xe.
 
-------
+---
 
 ## GET /vehicles/{id}
 
 Chi tiết xe.
 
-------
+---
 
 ## PUT /vehicles/{id}
 
 Cập nhật xe.
 
-------
+---
 
-# Vehicle Usage
+## GET /vehicles/{id}/documents
+
+Danh sách giấy tờ xe.
+
+---
+
+## POST /vehicles/{id}/documents
+
+Thêm giấy tờ xe.
+
+---
+
+# 15. Vehicle Usage & Fuel
 
 ## POST /vehicle-usages/start
 
-Khai báo ODO đi.
+Giáo viên bắt đầu sử dụng xe.
 
-------
+Request:
+
+```json
+{
+  "vehicleId": "uuid",
+  "odoStart": 10000,
+  "startImageUrl": "string"
+}
+```
+
+Ghi chú:
+
+- `startImageUrl` bắt buộc.
+- `odoStart` optional.
+
+---
 
 ## POST /vehicle-usages/end
 
-Khai báo ODO về.
+Giáo viên kết thúc sử dụng xe.
 
-------
+Request:
 
-# Fuel
+```json
+{
+  "vehicleUsageId": "uuid",
+  "odoEnd": 10050,
+  "endImageUrl": "string"
+}
+```
+
+Ghi chú:
+
+- `odoEnd` optional.
+- Nếu có `odoStart` và `odoEnd`, hệ thống kiểm tra `odoEnd >= odoStart`.
+
+---
+
+## GET /fuel-logs
+
+Danh sách khai báo nhiên liệu.
+
+---
 
 ## POST /fuel-logs
 
 Khai báo đổ xăng.
 
-Multipart:
+---
 
-- image
-- liters
+# 16. Maintenance
 
-------
+## GET /maintenance-requests
 
-# Maintenance
+Danh sách đề xuất bảo dưỡng.
+
+---
 
 ## POST /maintenance-requests
 
-Tạo yêu cầu bảo dưỡng.
+Tạo đề xuất bảo dưỡng.
 
-------
+---
 
 ## PUT /maintenance-requests/{id}/approve
 
-Duyệt bảo dưỡng.
+Duyệt đề xuất bảo dưỡng.
 
-------
+---
+
+## PUT /maintenance-requests/{id}/reject
+
+Từ chối đề xuất bảo dưỡng.
+
+---
+
+## GET /maintenance-records
+
+Lịch sử bảo dưỡng.
+
+---
 
 ## POST /maintenance-records
 
 Ghi nhận bảo dưỡng.
 
-------
+---
 
-# Employee
+# 17. Employee & Leave
 
 ## GET /employees
 
 Danh sách nhân viên.
 
-------
+---
 
 ## POST /employees
 
 Tạo nhân viên.
 
-------
+---
 
 ## PUT /employees/{id}
 
 Cập nhật nhân viên.
 
-------
+---
 
-# Salary
+## GET /leave-requests
 
-## GET /salary-calculations
+Danh sách nghỉ phép.
 
-Danh sách bảng lương.
+---
 
-------
+## POST /leave-requests
 
-## POST /salary-calculations/generate
+Tạo yêu cầu nghỉ phép.
 
-Sinh bảng lương.
+---
 
-------
+## PUT /leave-requests/{id}/approve
 
-## GET /salary-calculations/{id}
+Duyệt nghỉ phép.
 
-Chi tiết lương.
+---
 
-------
+## PUT /leave-requests/{id}/reject
 
-## PUT /salary-calculations/{id}/submit
+Từ chối nghỉ phép.
 
-Gửi duyệt.
+---
 
-------
+## GET /leave-policies
 
-## PUT /salary-calculations/{id}/approve
+Xem cấu hình nghỉ phép.
 
-Duyệt lương.
+---
 
-------
+## PUT /leave-policies/{id}
 
-# Notification
+Cập nhật cấu hình nghỉ phép.
+
+---
+
+# 18. Teaching Hour Summary
+
+## GET /teaching-hour-summaries
+
+Danh sách bảng tổng hợp giờ dạy.
+
+---
+
+## POST /teaching-hour-summaries/generate
+
+Sinh bảng tổng hợp giờ dạy theo tháng.
+
+Request:
+
+```json
+{
+  "month": 6,
+  "year": 2026
+}
+```
+
+---
+
+## GET /teaching-hour-summaries/{id}
+
+Chi tiết bảng tổng hợp giờ dạy.
+
+---
+
+## PUT /teaching-hour-summaries/{id}/submit
+
+Gửi Giám đốc duyệt.
+
+---
+
+## PUT /teaching-hour-summaries/{id}/approve
+
+Giám đốc duyệt.
+
+---
+
+## PUT /teaching-hour-summaries/{id}/reject
+
+Giám đốc từ chối.
+
+Request:
+
+```json
+{
+  "reason": "string"
+}
+```
+
+Ghi chú:
+
+- MVP chỉ tổng hợp giờ.
+- Chưa tính tiền lương tự động.
+
+---
+
+# 19. Notification
 
 ## GET /notifications
 
-Danh sách thông báo.
+Danh sách thông báo của người dùng.
 
-------
+---
 
 ## PUT /notifications/{id}/read
 
-Đánh dấu đã đọc.
+Đánh dấu thông báo đã đọc.
 
-------
+---
 
-# Dashboard
+## POST /notifications
 
-## GET /dashboard/admin
+Tạo thông báo nội bộ.
 
-Dashboard quản trị.
+---
 
-------
+# 20. Reports MVP
 
-## GET /dashboard/director
+## GET /reports/completed-students
 
-Dashboard giám đốc.
+Báo cáo học viên đã hoàn thành khóa học.
 
-------
+---
 
-# Audit Log
+## GET /reports/license-exam-results
+
+Báo cáo kết quả thi sát hạch của tất cả học viên.
+
+---
+
+## GET /reports/vehicles
+
+Báo cáo thông tin xe.
+
+---
+
+## GET /reports/employees
+
+Báo cáo thông tin nhân viên.
+
+---
+
+## GET /reports/teaching-hour-summaries
+
+Báo cáo bảng tổng hợp giờ dạy/lương.
+
+---
+
+# 21. Audit Log
 
 ## GET /audit-logs
 
-Tra cứu lịch sử thao tác.
+Tra cứu audit log.
 
-Filter:
+Query:
 
 ```http
-GET /audit-logs
-?entityType=STUDENT
-&entityId=xxx
+GET /audit-logs?entityType=STUDENT&entityId=uuid
 ```
-
-------
-
-# Configuration
-
-## GET /course-packages
-
-------
-
-## POST /course-packages
-
-------
-
-## PUT /course-packages/{id}
-
-------
-
-## GET /fee-configs
-
-------
-
-## PUT /fee-configs/{id}
-
-------
-
-## GET /system-settings
-
-------
-
-## PUT /system-settings/{id}
